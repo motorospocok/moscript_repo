@@ -1,0 +1,217 @@
+#verison1
+
+func gutrancell_relation_check
+ get $1 EUtranCellFDDId > $temp
+ ma relation_group $temp,gutranfreqrelation=.*,gutrancellrelation=
+ pr relation_group
+ if $nr_of_mos = 0
+  !echo $temp ' has no 5G NR cell relation - W A R N I N G' >> $pathset/$sitename_NR_check_report.txt
+ else
+  for $mo in relation_group
+   get $mo neighborCellRef > $5G_cell
+   $5G_cell = $5G_cell -s GUtraNetwork=1,
+   !echo $temp ' ----> ' $5G_cell >> $pathset/$sitename_NR_check_report.txt
+  done
+ fi
+ mr relation_group
+endfunc
+  
+func defined_gutrancellrelation
+ !echo '++++++++++++++++++++++++++++++++++++++++++++++++++' >> $pathset/$sitename_NR_check_report.txt
+ !echo ' ' >> $pathset/$sitename_NR_check_report.txt
+ !echo 'Defined LTE cell -> NR cell relations' >> $pathset/$sitename_NR_check_report.txt
+ !echo ' ' >> $pathset/$sitename_NR_check_report.txt
+ for $mo in lte_cells
+  gutrancell_relation_check $mo
+ done
+endfunc
+  
+func not_used_sync_print
+ !echo '++++++++++++++++++++++++++++++++++++++++++++++++++' >> $pathset/$sitename_NR_check_report.txt
+ !echo ' ' >> $pathset/$sitename_NR_check_report.txt
+ !echo 'Deletable GUtranSyncSignalFrequency MO list:' >> $pathset/$sitename_NR_check_report.txt
+ !echo ' ' >> $pathset/$sitename_NR_check_report.txt
+ $result = system(cat $pathset/trash_sync.txt)
+ if $result = 0
+  $table = readfile($pathset/trash_sync.txt)
+  for $lineNumber = 1 to $nr_of_lines
+   !echo $table[$lineNumber] >> $pathset/$sitename_NR_check_report.txt
+  done
+ else
+  !echo 'All GUtranSyncSignalFrequency MO assigned to ExternalGutranCell - nothing to clean up ' >> $pathset/$sitename_NR_check_report.txt
+ fi 
+ !echo ' ' >> $pathset/$sitename_NR_check_report.txt
+endfunc
+
+function SYNC_usage     
+ $temp = ldn($1)
+ $i = 0
+ for $nr_of_used_syncsignal
+  if $temp ~ $used_syncsignal[$i]
+   !echo $temp >>  $pathset/used_sync.txt
+  else
+   	!echo $temp >> $pathset/trash_sync.txt 
+  fi
+ done
+endfunc 
+
+func GUtranSyncSignalFrequency_check
+ ma SYNC_SIGS ENodeBFunction=1,GUtraNetwork=1,GUtranSyncSignalFrequency=
+ for $mo in SYNC_SIGS
+  SYNC_usage $mo
+ done
+endfunc
+
+func ExternalGutranCell_check
+ ma EXT_NRCELL ENodeBFunction=1,GUtraNetwork=1,ExternalGNodeBFunction=.*,ExternalGUtranCell=
+ $nr_of_used_syncsignal = 0
+ for $mo in EXT_NRCELL
+  get $mo gUtranSyncSignalFrequencyRef > $used_syncsignal[$nr_of_used_syncsignal]
+  $nr_of_used_syncsignal = $nr_of_used_syncsignal + 1
+ done
+endfunc
+
+func lte_tech_check
+ st ENodeBFunction=1,EUtranCellFDD=
+ ma lte_cells ENodeBFunction=1,EUtranCellFDD=
+ if $nr_of_mos > 0
+  $LTE_cell_defined = 1
+  !echo '++++++++++++++++++++++++++++++++++++++++++++++++++' >> $pathset/$sitename_NR_check_report.txt
+  !echo ' ' >> $pathset/$sitename_NR_check_report.txt
+  !echo 'Defined LTE cells:' >> $pathset/$sitename_NR_check_report.txt
+  for $mo in lte_cells
+   $temp = ldn($mo)
+   check_upper $mo
+   check_endcallowed $mo   
+   !echo $temp 'upper layer '$upper 'endc allowed setup ' $endc >> $pathset/$sitename_NR_check_report.txt
+  done
+  !echo ' ' >> $pathset/$sitename_NR_check_report.txt
+ fi
+  
+endfunc
+
+func check_upper
+ unset $upper
+ get $1 primaryUpperLayerInd > $upper
+ if $upper ~ OFF
+  $upper = OFF
+ else
+  $upper = ON
+ fi
+endfunc
+
+func check_endcallowed
+ unset $endc_allowed
+ get $mo endcAllowedPlmnList > $endc_allowed
+ if $endc_allowed[mnc] > 0
+  $endc = MNC-$endc_allowed[mcc] MCC-$endc_allowed[mnc]
+ else
+  $endc = NOT_SET--WARNING!
+ fi
+ endfunc
+ 
+func nr_tech_check
+ st NrCellDU
+ ma nr_cells  GNBDUFunction=1,NRCellDU=
+ if $nr_of_mos > 0
+  $NR_cell_defined = 1
+  !echo '++++++++++++++++++++++++++++++++++++++++++++++++++' >> $pathset/$sitename_NR_check_report.txt
+  !echo ' ' >> $pathset/$sitename_NR_check_report.txt
+  !echo 'Defined NR cells:' >> $pathset/$sitename_NR_check_report.txt
+  !echo ' ' >> $pathset/$sitename_NR_check_report.txt
+  for $mo in nr_cells
+   $temp = ldn($mo)
+   !echo $temp >> $pathset/$sitename_NR_check_report.txt
+  done
+   !echo ' ' >> $pathset/$sitename_NR_check_report.txt
+   !echo '++++++++++++++++++++++++++++++++++++++++++++++++++' >> $pathset/$sitename_NR_check_report.txt
+   
+ fi
+ endfunc
+ 
+func sum_tech
+ if $LTE_cell_defined = 1 && $NR_cell_defined = 1
+  $NR_and_LTE = 1
+  !echo ' ' >> $pathset/$sitename_NR_check_report.txt
+  !echo 'Site config conclusion : This site is LTE DC and NR as well' >> $pathset/$sitename_NR_check_report.txt
+ fi
+ if $LTE_cell_defined = 1 && $NR_cell_defined = 0
+  $LTE_only = 1
+  !echo 'Site config conclusion : This site is LTE DC only' >> $pathset/$sitename_NR_check_report.txt
+ fi
+ if $LTE_cell_defined = 0 && $NR_cell_defined = 1
+  $NR_only = 1
+  !echo 'Site config conclusion : This site is 5G NR only - NSA' >> $pathset/$sitename_NR_check_report.txt
+ fi
+ if $LTE_cell_defined = 0 && $NR_cell_defined = 0
+  !echo 'Site config conclusion : NO LTE and NO NR configured WTF???' >> $pathset/$sitename_NR_check_report.txt
+ fi
+ !echo ' ' >> $pathset/$sitename_NR_check_report.txt
+endfunc
+
+func check_endc_profile
+ get QciTable=default,QciProfilePredefined=qci8 endcProfileRef > $qci8_endc
+ pr endcprofile=
+ if nr_of_mos > 0
+  $endc_defined = ENDC_profile_is_defined   
+ else
+  $endc_defined = NO_ENDC_profile - WARNING
+ fi
+ if $qci8_endc ~ predefined
+ $endc_info = QCI8_assigned_to_predefinedENDC-WARNING
+ else
+  $endc_info = QCI8_assigned_to_ENDC-seems_OK
+ fi
+ !echo ' ' >> $pathset/$sitename_NR_check_report.txt
+ !echo '++++++++++++++++++++++++++++++++++++++++++++++++++' >> $pathset/$sitename_NR_check_report.txt
+ !echo ' ' >> $pathset/$sitename_NR_check_report.txt
+ !echo 'ENDC profile check: '$endc_defined' '$endc_info' check arplev just for sure' >> $pathset/$sitename_NR_check_report.txt
+ !echo ' ' >> $pathset/$sitename_NR_check_report.txt
+ !echo '++++++++++++++++++++++++++++++++++++++++++++++++++' >> $pathset/$sitename_NR_check_report.txt
+ !echo ' ' >> $pathset/$sitename_NR_check_report.txt
+ get SystemFunctions=1,Lm=1,FeatureState=CXC4012218 featureState$ > $basic_feature
+ get SystemFunctions=1,Lm=1,FeatureState=CXC4012218 licenseState$ > $basic_license
+ if $basic_license ~ 1
+  !echo 'Basic intelligence feature is LICENSED - OK' >> $pathset/$sitename_NR_check_report.txt
+ else
+  !echo 'Basic intelligence feature is NOT LICENSED - WARNING' >> $pathset/$sitename_NR_check_report.txt
+ fi
+ if $basic_feature ~ 1
+  !echo 'Basic intelligence feature is active - OK' >> $pathset/$sitename_NR_check_report.txt
+ else
+  !echo 'Basic intelligence feature is NOT active - WARNING' >> $pathset/$sitename_NR_check_report.txt
+ fi
+ !echo ' ' >> $pathset/$sitename_NR_check_report.txt
+ !echo '++++++++++++++++++++++++++++++++++++++++++++++++++' >> $pathset/$sitename_NR_check_report.txt
+endfunc
+   
+
+
+## Main program starts here
+$pathset = /home/motorospocok/script_develop
+
+get . ^ManagedElementId > $sitename
+!echo '**************************************** NR CHECK REPORT ****************************************' >> $sitename_NR_check_report.txt
+!echo 'Site Name: '$sitename >> $pathset/$sitename_NR_check_report.txt
+
+$NR_only = 0
+$LTE_only = 0
+$NR_and_LTE = 0
+$LTE_cell_defined = 0
+$NR_cell_defined = 0
+
+
+lte_tech_check
+nr_tech_check
+sum_tech
+
+if $NR_and_LTE = 1 || $LTE_only = 1
+ ExternalGutranCell_check
+ GUtranSyncSignalFrequency_check
+ not_used_sync_print
+ defined_gutrancellrelation
+ check_endc_profile
+fi
+!cat BUE15_NR_check_report.txt
+!rm *txt
+
