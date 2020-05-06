@@ -1,4 +1,4 @@
-#verison1
+#verison 2 for test
 
 func gutrancell_relation_check
  get $1 EUtranCellFDDId > $temp
