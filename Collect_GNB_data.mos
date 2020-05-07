@@ -1,0 +1,13 @@
+$write_path_file = /home/shared/ethtoja/scriptek/database_files/GnodeB_IP_data.txt
+lt all
+get . ^managedElementId > $site
+get GNBCUCPFunction=1  gNBId$ > $gnb_ID
+get GNBCUCPFunction=1  gNBIdLength > $gnb_ID_length
+get GNBCUUPFunction=1 intraRanIpAddressRef > $ref1
+get $ref1 ^address$ > $1ip_paddress
+$split_separator = /
+$1ip_address = split($1ip_paddress)
+$ip_address = $1ip_address[1]
+get GNBCUCPFunction=1 pLMNId > $gnode_PLMN
+$final = $site,$gnb_ID,$gnb_ID_length,$ip_address,$gnode_PLMN[mcc],$gnode_PLMN[mnc]
+!echo $final >> $write_path_file                                                    
