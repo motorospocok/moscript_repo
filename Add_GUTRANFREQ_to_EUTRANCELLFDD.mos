@@ -1,0 +1,24 @@
+#Add GutranFreq MO to LTE DC by ETHTOJA
+#V1.0 version - simple creates GUtranFreqRelation on ALL cells with all GUtran freqs
+#The script MUST BE run AFTER unlocked and enabled TermPointToGNB
+
+#Function to create all gutranfreq relations in a cell 
+func define_all_gutranrel
+ for $mo in group1
+  $ref_name = ldn($mo)
+  get $mo arfcn > $arfcn_1
+  cr  ENodeBFunction=1,EUtranCellFDD=$1,GUtranFreqRelation=$arfcn_1
+  $ref_name
+ done
+endfunc
+
+#main program starts here
+lt all
+ma group1 GUtraNetwork=1,GUtranSyncSignalFrequency=
+ma group2 ENodeBFunction=1,EUtranCellFDD= 
+
+for $mo in group2
+ get $mo eUtranCellFDDId > $cell
+ #call function with cellid parameter
+ define_all_gutranrel $cell 
+done

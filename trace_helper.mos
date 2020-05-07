@@ -1,0 +1,44 @@
+$valami1 = false
+$valami2 = false
+$valami3 = false
+$valami4 = false
+$valami5 = all
+
+$menupoint=0
+
+for ever
+	echo 1. RANAP TRACE activation: ($valami1)
+	echo 2. RNSAP TRACE activation: $valami2
+	echo 3. RRC TRACE   activation: $valami3
+	echo 4. NBAP TRACE  activation: $valami4
+	echo 5. Activation on module:	  $valami5
+	echo 6. Continue to trace activation press 6
+	$menu_point = readinput(Enter your selection)
+		if menu_point ~ 1 
+			$valami1 = true
+		fi
+		if menu_point ~ 2
+			$valami2 = true
+		fi
+		if menu_point ~ 3
+			$valami3 = true
+		fi
+		if menu_point ~ 4
+			$valami4 = true
+		fi
+		if menu_point ~ 5
+			$valami5 = $menu_point
+		fi
+		if menu_point = 6
+			$valami5 = $menu_point
+			break
+		fi
+done
+
+echo Itt a vege fuss el vele
+		
+
+
+
+
+

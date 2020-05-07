@@ -1,0 +1,65 @@
+#This script is written for NRI check by ETHTOJA
+#The scripts calculates the nCI values and compares with the current cell setup
+#If the values are different then there is possibility to modify them
+
+
+#doing some file preparation
+
+!echo '************* NR Check by Toja **************' >> temp.txt
+!echo 'gs' >> modify.mos
+!echo 'confb' >> modify.mos
+
+#function for NRI calculation and comparation with the existing nCI setup
+function NRI_CALC
+ d2b $1 > $cellid_bin
+ 
+ #obtain the lenght of the binary number
+ $length = `$gawk -v cel_id=$cellid_bin 'BEGIN {print length(cel_id)}'
+ 
+ #extend it to 14 bit long
+ $length = 13 - $length
+ $filler = 0
+ for $length
+	$filler = $filler0
+ done
+ 
+ $nci_bin = $gnb_bin$filler$cellid_bin
+ b2d $nci_bin > $nci_dec
+ $var = nok
+ pv $nci_dec
+ pv $2
+ if $nci_dec = $2
+	!echo 'Cell name: $3 is passed. nCI: $2' >> temp.txt
+ else
+	!echo 'Cell name: $3 is NOT OK. nCi: $2 - calculated value: $nci_dec' >> temp.txt
+	!echo 'lset NrCellDu=$3 nCI $nci_dec' >> modify.mos
+ fi
+endfunc
+#function part end
+
+#Main program begins below
+
+get GNBCUCPFunction=1  gNBId$ > $gnb_dec
+d2b $gnb_dec > $gnb_bin
+
+ma cellak NrCellDu=
+for $mo in cellak
+ get $mo cellLocalId > $cellid_dec
+ get $mo nCI > $cell_nci
+ get $mo nRCellDUId > $cell_duID
+ NRI_CALC $cellid_dec $cell_nci $cell_duID
+done
+!echo '*********************************************' >> temp.txt
+!cat temp.txt
+$alma = readinput( Do you want to run correction? )
+
+!echo 'gs' >> modify.mos
+!echo 'confb' >> modify.mos
+if $alma ~ y
+	runx modify.mos
+fi
+
+#remove temp files
+!rm modify.mos
+!rm temp.txt 
+

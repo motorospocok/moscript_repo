@@ -1,0 +1,26 @@
+#Trace monitor script by ETHTOJA
+#Target terminal is tty command output
+#e.g. if tty give /dev/pts/2 then target terminal is 2
+
+$datum = `date +%y%m%d_%H%M`
+$trace_file = trace1_$datum.log
+$trace_file2 = readinput( TRACE file name - d default: )
+$terminal = readinput( Please enter the target terminal: )
+if $trace_file2 != d
+ $trace_file = $trace_file2
+fi
+$trace_cards = readinput( Please enter the trace target - d default: )
+if $trace_cards = d
+ $trace_cards = coremp
+fi
+
+
+get 0 ^managedElementId > $site_name
+l+ ~/temp_$site_name
+mon $trace_cards
+l-
+$alma = `cat ~/temp_$site_name | grep -i moncommand | awk 'BEGIN {FS="="}{print $2}'`
+$alma = $alma| tee ~/$trace_file|ltng-decoder -s|ltng-flow -s > /dev/pts/$terminal &
+!rm ~/temp_$site_name
+$valami = readinput( Are you ready for Captain Jack? )
+!$alma

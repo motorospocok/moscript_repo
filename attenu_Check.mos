@@ -1,0 +1,36 @@
+lt all
+prox
+s+
+l+ ~/original_feeder_set.log
+get antfeedercable=.b attenu
+l-
+ma gempa antfeedercable=.b
+for $mo in gempa
+get $mo dlattenu > $dlatt
+get $mo ulattenu > $ulatt
+$hiba = van
+$dl = split($dlatt)
+$ul = split($ulatt)
+$result = $dl[3] - $ul[3]
+if $result = 166
+	$conclusion = oki_minden
+	$hiba = nincs
+fi
+if $result = -166
+	$conclusion = S_W_A_P_required
+	$hiba = nincs
+fi
+if $hiba = van
+	$conclusion = incorrect_set
+fi
+$ant = rdn($mo)
+l echo $ant dlAtttenu value: $dl[3] ullAtttenu value: $ul[3] Difference, 166 is good : $result
+l echo  $conclusion
+$modul = $dl[3] $dl[4] $dl[5] $dl[6] $dl[7] $dl[8] $dl[9] $dl[10] $dl[11] $dl[12] $dl[13] $dl[14] $dl[15] $dl[16] $dl[17]
+$moddl = $ul[3] $ul[4] $ul[5] $ul[6] $ul[7] $ul[8] $ul[9] $ul[10] $ul[11] $ul[12] $ul[13] $ul[14] $ul[15] $ul[16] $ul[17]
+$valami = readinput( Swap is necessary ? )
+if $valami = yes
+	set $mo ulAttenuation $modul
+	set $mo dlAttenuation $moddl
+fi
+done
