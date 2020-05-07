@@ -1,0 +1,66 @@
+## This script read the FAJ numbers from the file and attempts to find out the CXP number and license state
+## Also checks if it is a capacity license or not
+## If licensed then set the faturestate to 1
+## Used during parity lkf tests during ESS project
+
+## Please set the path and file to the FAJ list
+$faj_list = readfile(FAJ.txt)
+
+gs
+confb
+invl
+
+!echo '******************************************** Feature activation report ********************************************' >> activation_report.txt
+!echo ' '>> activation_report.txt
+
+## Functions declaration part follows here
+
+function check_LKF
+ $cxp = $1
+ $faj = $2
+
+ ma gempa CapacityState=$cxp
+ pr gempa
+ if $nr_of_mos > 0
+  get gempa description > $dcr
+  !echo 'Capacity feature, NOT POSSIBLE TO SET ----------------------------------------- '$cxp' '$faj' '$dcr >> activation_report.txt
+  $lkf_state = CAPACITY1
+   mr gempa
+ else
+  get SystemFunctions=1,Lm=1,FeatureState=$cxp licenseState > $lkf_state
+  get SystemFunctions=1,Lm=1,FeatureState=$cxp description > $dcr
+ fi
+
+ if $lkf_state ~ ENABLED
+  set SystemFunctions=1,Lm=1,FeatureState=$cxp featureState 1
+  !echo 'Activated --------------------------------------------------------------------- '$cxp' '$faj' '$dcr >> activation_report.txt
+ fi
+ if $lkf_state ~ DISABLED
+  !echo 'NOT licensed, NOT possible to activate ---------------------------------------- '$cxp' '$faj' '$dcr  >> activation_report.txt
+ fi
+endfunc
+
+## Main program starts here
+
+for $lineNumber = 1 to $nr_of_lines
+ $search = EMPTY
+ $find_faj = $faj_list[$lineNumber]
+ l+ temp_invl.log
+ invl $find_faj
+ l-	
+ 
+ $search = `cat temp_invl.log | grep -i CXC | awk 'BEGIN {FS=" "}{print $2}'`
+ !rm temp_invl.log
+ if $search !~ CXC
+  !echo 'The following feature has no LKF key in this sw level ------------------------- '$find_faj >> activation_report.txt
+ else
+ check_LKF $search $find_faj
+ fi
+done
+!echo ' '>> activation_report.txt
+!echo '**********************************************         REPORT END         *****************************************' >> activation_report.txt
+
+!cat activation_report.txt
+!rm activation_report.txt
+gs
+confb
