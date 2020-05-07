@@ -1,7 +1,3 @@
-#Trace monitor script by ETHTOJA
-#Target terminal is tty command output
-#e.g. if tty give /dev/pts/2 then target terminal is 2
-
 $datum = `date +%y%m%d_%H%M`
 $trace_file = trace1_$datum.log
 $trace_file2 = readinput( TRACE file name - d default: )
@@ -20,7 +16,14 @@ l+ ~/temp_$site_name
 mon $trace_cards
 l-
 $alma = `cat ~/temp_$site_name | grep -i moncommand | awk 'BEGIN {FS="="}{print $2}'`
-$alma = $alma| tee ~/$trace_file|ltng-decoder -s|ltng-flow -s > /dev/pts/$terminal &
+$alma = $alma| tee ~/trace_logs/$trace_file | ltng-flow -s > /dev/pts/$terminal &
 !rm ~/temp_$site_name
+!cat ~/scriptek/rocket1.txt
 $valami = readinput( Are you ready for Captain Jack? )
-!$alma
+if $valami ~ y
+  !cat ~/scriptek/launch.txt
+  !$alma
+else
+  mon-
+  !cat ~/scriptek/cancell.txt
+fi
