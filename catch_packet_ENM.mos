@@ -7,6 +7,7 @@
 #For correct behaviour the moshell is added to the Linux / Unix path
 
 #**************** Initial variables************************************
+
 $test_set = readinput(Please enter test case ID: ) #TEST SET ID, the PCAP file name will be the same e.g COS-1
 $orig_path = /home/shared/ethtoja
 $server_ip = 10.244.92.15
@@ -17,6 +18,7 @@ $windows_path = $orig_path
 $packet_capture_psw = 12345678 #password for captured file
 
 get 0 managedElementId > $site
+
 #**************** Initial variables end************************************
 
 !echo "**********************************************************" >> $sitepacket_prog_disp.txt
