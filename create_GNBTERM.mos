@@ -1,0 +1,175 @@
+## This script creates GNB Termpoint in a LTE DC node 
+## V.1.0
+
+lt all
+
+
+## ---------------------------------- Function definitions ---------------------------------
+ 
+function check_intell
+ get CXC4012218 licenseState > $lic_state
+ if $lic_state ~ 0
+  !echo '**************************************************************' >> ~/error.txt
+  !echo ' ERROR: BASIC INTELLIGENT FEATURE NOT LICENSED  SCRIPT STOPPED' >> ~/error.txt
+  !echo '**************************************************************' >> ~/error.txt
+  !cat ~/error.txt
+  !rm ~/error.txt
+  $fault = 1
+ else
+  confb
+  set Lm=1,FeatureState=CXC4012218 featureState 1
+  confb
+ fi
+endfunc
+
+function check_LTE
+ pr ENodeBFunction=1
+ if $nr_of_mos = 0
+ !echo '********************************************' >> ~/error.txt
+ !echo ' ERROR: THIS is NOT LTE node SCRIPT STOPPED' >> ~/error.txt
+ !echo '********************************************' >> ~/error.txt
+ !cat ~/error.txt
+ !rm ~/error.txt
+ $fault = 1
+ fi
+endfunc
+
+function check_Endcprofile
+ pr EndcProfile=
+ if $nr_of_mos = 0
+  !echo '********************************************' >> ~/error.txt
+  !echo ' ERROR: ENDC PROFILE NOT DEFINED' >> ~/error.txt
+  !echo ' Do not panic, we will create one now!' >> ~/error.txt
+  !echo '********************************************' >> ~/error.txt
+  !cat ~/error.txt
+  !rm ~/error.txt
+  $endc_ID = readinput( Please enter ENDC profile ID )
+  $meNbS1TermReqArpLev = readinput( Please enter meNbS1TermReqArpLev )
+  $splitNotAllowedUeArpLev = readinput( Please enter splitNotAllowedUeArpLev )
+  gs+
+  crn ENodeBFunction=1,EndcProfile=$endc_ID
+  meNbS1TermReqArpLev $meNbS1TermReqArpLev
+  splitNotAllowedUeArpLev $splitNotAllowedUeArpLev
+  userLabel 
+  end
+  gs-
+  $qci = readinput( Please give me the QCI number which will be assigned to this profile )
+  confb
+  lset ENodeBFunction=1,QciTable=default,QciProfilePredefined=qci$qci$ endcProfileRef EndcProfile=$endc_ID 
+  confb
+ fi
+endfunc 
+
+function create_TermPointToGNB
+ $GNB_name = $1
+ pr ENodeBFunction=1,GUtraNetwork=1
+ if $nr_of_mos = 0 
+  confb
+  crn ENodeBFunction=1,GUtraNetwork=1
+  userLabel 
+  end
+  confb
+ fi
+ ma tempgr GUtraNetwork=1,ExternalGNodeBFunction= gNodeBId $2
+ pr tempgr
+ if $nr_of_mos > 0
+  get tempgr externalGNodeBFunctionId > $temp1
+  !echo '*********************************************************************' >> ~/error.txt
+  !echo ' ERROR: This ExternalGNodeBFunction is already created in this node' >> ~/error.txt
+  !echo ' Defined name: $temp1'  >> ~/error.txt
+  !echo '*********************************************************************' >> ~/error.txt
+  !cat ~/error.txt 
+  $s = readinput( Hit Enter to contine )
+  !rm ~/error.txt
+  $GNB_name = $temp1  
+ else
+   confb
+   crn ENodeBFunction=1,GUtraNetwork=1,ExternalGNodeBFunction=$GNB_name
+   gNodeBId $2
+   gNodeBIdLength $3
+   gNodeBPlmnId mcc=$5,mnc=$6,mncLength=2
+   userLabel 
+   end
+   confb
+ fi
+ mr tempgr
+ ma tempgr TermPointToGNB= ^ipaddress$ $4
+ pr tempgr
+ if $nr_of_mos > 0
+  get tempgr termPointToGNBId > $temp1
+  !echo '*********************************************************' >> ~/error.txt
+  !echo ' ERROR: This TermPointToGNB is already created in this node' >> ~/error.txt
+  !echo ' Defined name: $temp1'  >> ~/error.txt
+  !echo '*********************************************************' >> ~/error.txt 
+  !cat ~/error.txt
+  $s = readinput( Hit Enter to contine )
+  !rm ~/error.txt
+  $already_done = 1  
+ else
+  confb
+  crn ENodeBFunction=1,GUtraNetwork=1,ExternalGNodeBFunction=$GNB_name,TermPointToGNB=$GNB_name
+  administrativeState 1
+  domainName 
+  ipAddress $4
+  ipsecEpAddress ::
+  ipv6Address ::
+  upIpAddress ::
+  end
+  confb
+ fi
+ mr tempgr
+endfunc
+
+function send_message
+ !echo '*********************************************************' >> ~/error.txt
+ !echo $1 >> ~/error.txt
+ !echo '*********************************************************' >> ~/error.txt 
+ !cat ~/error.txt
+ !rm ~/error.txt
+endfunc
+
+## ---------------------------------- Function definitions ---------------------------------
+
+## ---------------------------------Main program starts here -------------------------------
+$fault = 0
+$already_done = 0
+$find_GNB = $1
+if $find_GNB !~ [a-z]||[A-Z]
+ $find_GNB = readinput( It seems no GNodeB name given yet, please give me one )
+fi
+$GnodeB_IP_data = /home/shared/ethtoja/scriptek/database_files/GnodeB_IP_data.txt
+$data1 = `cat $GnodeB_IP_data | grep -i $find_GNB`
+if $data1 !~ [0-9]
+ $message = ERROR_NO_GNodeB_found_with_this_name-SCRIPT_STOPPED
+ $fault = 1
+fi
+if $fault = 0
+ check_LTE
+fi
+if $fault = 0
+ check_intell
+fi
+if $fault = 0
+ check_Endcprofile
+fi
+if $fault = 0
+ pv $data1
+ $split_separator = ,
+ $data2 = split($data1)
+ pv $data2
+ create_TermPointToGNB $data2[1] $data2[2] $data2[3] $data2[4] $data2[5] $data2[6]
+fi
+
+if $already_done = 1
+ $message = GNodeB_ALREADY_added_to_this_LTE-DC_node_NOTHING_to_do
+fi
+
+if $fault = 0 && $already_done = 0
+ $message = GNodeB_SUCCESSFULLY_added_to_this_LTE-DC_node 
+fi
+
+send_message $message
+
+!echo '--SCRIPT---ENDED--' >> ~/error.txt
+!cat ~/error.txt
+!rm ~/error.txt
