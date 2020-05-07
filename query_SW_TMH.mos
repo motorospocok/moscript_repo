@@ -1,0 +1,14 @@
+// Translate CXP package id program
+// uses upgradepackage list.txt
+
+lt upgradepac
+
+ ma current_sw upgradepackage ^state$ 7
+ get current_sw upgradePackageId > $curr_sw_radio
+ $curr_sw_radio =  $curr_sw_radio -s - -r _ 
+ $find_sw = `cat /home/shared/tothja/scriptek/upgrade_package_list.txt | grep $curr_sw_radio`
+ !echo '*****************************************************************************************' >> ~/SW_TEMP.log
+ !echo 'Site is running on: - '$find_sw>> ~/SW_TEMP.log
+ !echo '*****************************************************************************************' >> ~/SW_TEMP.log
+ !cat ~/SW_TEMP.log
+ !rm ~/SW_TEMP.log

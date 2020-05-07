@@ -1,0 +1,44 @@
+//System constant repro by ETHTOJA
+//This script produces system constant setup file from sysconread printout
+//The systemconstant file is called as systemconstant.txt
+$path_id = /home/shared/ethtoja/scriptek/script_output
+$date = `date "+%Y-%m-%d %H:%M:%S"`
+ma current_sw upgradepackage ^state$ 7
+get current_sw upgradePackageId > $curr_sw_radio
+$curr_sw_radio =  $curr_sw_radio -s - -r _ 
+$find_sw = `cat /home/shared/ethtoja/scriptek/upgrade_package_list.txt | grep $curr_sw_radio` 
+get 0 managedElementId > $site_name
+$remark = readinput( Pust some remark now , if you want )
+
+!echo '/////////////////////////////////////////////////////////////////////////' >> $path_id/sysconstant.txt
+!echo '// This sysconstant file is generated with the following setup:' >> $path_id/sysconstant.txt
+!echo '// Site name: $site_name' >> $path_id/sysconstant.txt
+!echo '// SW level: $find_sw' >> $path_id/sysconstant.txt
+!echo '// Date: $date' >> $path_id/sysconstant.txt
+!echo '// Remark: $remark' >> $path_id/sysconstant.txt
+!echo '/////////////////////////////////////////////////////////////////////////' >> $path_id/sysconstant.txt
+!echo ' ' >> $path_id/sysconstant.txt
+
+l+ gempa1.log
+sysconread
+l-
+!cat gempa1.log | grep , > gempa2.log
+$sc1 = readfile(gempa2.log)
+$scw = scw  $sc1[1]
+$split_separator = ,
+$sc2 = split($sc1[1])
+
+for $seged = 1 to $split_last
+	$sc2[$seged] = $sc2[$seged] -s : -r \x20
+	!echo 'sysconwrite $sc2[$seged]' >> $path_id/sysconstant.txt
+done
+!echo ' ' >> $path_id/sysconstant.txt
+!echo '$scw' >> $path_id/sysconstant.txt
+!echo ' ' >> $path_id/sysconstant.txt
+!echo '/////////////////////////////////////////////////////////////////////////' >> $path_id/sysconstant.txt
+!echo '// System constant setup file end' >> $path_id/sysconstant.txt
+!echo '/////////////////////////////////////////////////////////////////////////' >> $path_id/sysconstant.txt
+echo ' ' >> $path_id/sysconstant.txt
+!rm gempa*
+!cat $path_id/sysconstant.txt
+pv $path_id

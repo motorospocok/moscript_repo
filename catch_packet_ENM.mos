@@ -57,7 +57,7 @@ $lineContent = readfile($sitepacket_status)
 $decode = $lineContent[17] -s filename=
 !cd $windows_path
 !openssl enc -aes-256-ctr -d -in $decode -out $test_set.pcap -pass pass:12345678
-!cd ~/moshell
+
 !rm $sitemenu_temp.txt
 !rm $sitepacket_prog_disp.txt
 !rm $sitepacket_stop_disp.txt
