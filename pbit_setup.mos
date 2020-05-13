@@ -1,0 +1,55 @@
+## Simple pbit script setup in RNC by ethtoja
+## This script uses the MO script receiving during the integration which creates the GigabitEthernet MO
+## and set DSCP and Pbit mapping
+## Just create a simple mo_script.mo file which contains the CREATING method for the GigabitEthernet MO
+## and run this script.
+
+lt all
+
+!cat mo_script.mo | grep -i 'pbit Integer'| awk 'BEGIN {FS=" "}{print $3}' > temp_pbit.log
+!cat mo_script.mo | grep -i 'dscp integer'| awk 'BEGIN {FS=" "}{print $3}' > temp_dscp.log
+!cat temp_pbit.log
+
+$alma = `cat mo_script.mo| grep -i parent|awk 'BEGIN {FS="\""}{print $2",GigaBitEthernet=1"}'
+$dscp_list = readfile(temp_dscp.log)
+
+$num_dscp = $nr_of_lines
+$pbit_list = readfile(temp_pbit.log)
+
+$num_pbit = $nr_of_lines
+
+func pbit_setup
+ 
+
+ $i = 1
+ for $num_pbit
+  pv $dscp_list[$i]
+  pv $pbit_list[$i]
+  confb
+  gs
+  accn $alma setDscpPbit $dscp_list[$i] $pbit_list[$i]
+  gs
+  confb
+  $i = $i + 1
+ done
+ !echo '*************************************Pbit setup result*****************************' >> result.log
+ !echo '*                                                                                 *' >> result.log
+ !echo '*                                  Setup is executed                              *' >> result.log
+ !echo '*                                                                                 *' >> result.log
+ !echo '*************************************Pbit setup result*****************************' >> result.log
+endfunc
+
+if $num_dscp = $num_pbit
+ pbit_setup
+else
+ !echo '*************************************Pbit setup result*****************************' >> result.log
+ !echo '*                                                                                 *' >> result.log
+ !echo '* Something wrong, DSCP and PBIT array size are different,wrong MO script source? *' >> result.log
+ !echo '*                                                                                 *' >> result.log
+ !echo '*************************************Pbit setup result*****************************' >> result.log
+fi
+
+!cat result.log
+!rm result.log
+!rm temp_pbit.log
+!rm temp_dscp.log  
