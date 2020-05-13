@@ -2,6 +2,7 @@
 ## Also checks if it is a capacity license or not
 ## If licensed then set the faturestate to 1
 ## Used during parity lkf tests during ESS project
+## Needs FAJ.txt which contains the faj number e.g FAJ1234567
 
 ## Please set the path and file to the FAJ list
 $faj_list = readfile(FAJ.txt)
