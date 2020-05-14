@@ -1,0 +1,99 @@
+#System constant setup by Toja
+#This script supports systemconstant setup
+
+
+func syscon_reset
+ l+ ~/temp.log
+ sysconread
+ l-
+ $const_list = `cat ~/temp.log | grep -i ,` 
+ pv $const_list
+ $split_separator = ,
+ !rm ~/temp.log
+ $tempvar = split($const_list)
+ pv $tempvar
+ $sysCo = readinput( Enter array number of systemconstant for reset )
+ $split_separator = :
+ $tempvar2 = split($tempvar[$sysCo]
+ pv $tempvar2
+ sysconreset $tempvar2[1]
+ unset $tempvar2
+ unset $tempvar
+ unset $const_list
+ unset $sysCo
+ l+ ~/temp.log
+ sysconread
+ l-
+ $const_list = `cat ~/temp.log | grep -i ,` 
+ pv $const_list
+ $split_separator = ,
+ !rm ~/temp.log
+ $tempvar = split($const_list)
+ pv $tempvar 
+ $alma = readinput(Current system constant setup is above. PRESS ENTER to continue) 
+ unset $tempvar
+ unset $const_list
+endfunc
+
+func syscon_write
+ l+ ~/temp.log
+ sysconread
+ l-
+ $const_list = `cat ~/temp.log | grep -i ,` 
+ pv $const_list
+ $split_separator = ,
+ !rm ~/temp.log
+ $tempvar = split($const_list)
+ pv $tempvar 
+
+ $sysCo = readinput( Enter syscontant-space-value )
+ unset $tempvar
+ unset $const_list
+ sysconwrite $sysCo
+  l+ ~/temp.log
+ sysconread
+ l-
+ $const_list = `cat ~/temp.log | grep -i ,` 
+ pv $const_list
+ $split_separator = ,
+ !rm ~/temp.log
+ $tempvar = split($const_list)
+ pv $tempvar 
+ $alma = readinput(Current system constant setup is above. PRESS ENTER to continue) 
+ unset $tempvar
+ unset $const_list
+endfunc
+
+func syscon_list
+ l+ ~/temp.log
+ sysconread
+ l-
+ $const_list = `cat ~/temp.log | grep -i ,` 
+ pv $const_list
+ $split_separator = ,
+ !rm ~/temp.log
+ $tempvar = split($const_list)
+
+ pv $tempvar
+ $alma = readinput(Current system constant setup is above. PRESS ENTER to continue) 
+ unset $tempvar
+ unset $const_list   
+endfunc
+
+$alma = readinput( WARNING! If only one system constant is set then the LIST fucntion does not work Correctly! Yet.. PRESS ENTER KEY)
+unset $alma
+for ever
+ $choice = readinput( L-list, W-write, R-reset, Q-quit )
+ if $choice = q || $choice = Q
+	break
+ fi
+ if $choice = l || $choice = L
+	syscon_list
+ fi
+ if $choice = w || $choice = W
+	syscon_write
+ fi
+ if $choice = r || $choice = R
+	syscon_reset
+ fi
+done
