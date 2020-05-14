@@ -1,0 +1,440 @@
+// Health script by Toja
+// Written for SSC LAB pre and post HC report generation
+// This script uses upgrade_package_list.txt to obtain sw level
+// Version 1.01 - added NR cell check on new MO struct
+// Version 1.02 - added HTML based alarm
+
+$date = `date "+%Y-%m-%d %H:%M:%S"`
+$path_to_files = /home/shared/ethtoja/prehc/
+$path_to_UPtxt = /home/shared/ethtoja/scriptek/
+$flag_radionode = 0
+$flag_LTE = 0
+$flag_WCMDA = 0
+$flag_GSM = 0
+$flag_5G = 0
+$unit_type = 0
+$flag_3GDUW = 0
+$flag_RNC = 0
+$flag_DUS = 0
+$hcflag = preHC
+$header = PRE HEALTH CHECK REPORT
+
+
+$conclusion = "Result: OK - Site is ready for SW upgrade"
+
+//////////////////////////////////////////////////////////
+//////////// Function declaration part////////////////////
+//////////////////////////////////////////////////////////
+
+func detect_nodetype
+ pr FieldReplaceableUnit
+ if $nr_of_mos > 0
+	$flag_radionode = 1
+ fi
+ 
+ get ^PlugInUnit=1 unittype > $unit_type
+ if $unit_type ~ DUW
+	$flag_3GDUW = 1
+ fi
+ 
+ pr rncfunction=1
+ if $nr_of_mos > 0
+	$flag_RNC = 1
+ fi
+ 
+ get ^PlugInUnit=1 unittype > $unit_type
+ if $unit_type ~ DUS
+	$flag_DUS = 1
+	$flag_LTE = 1
+ fi
+ 
+endfunc
+
+func sw_check_radionode
+ get 0 managedElementId > $site_name
+ $lineContent = testfile($path_to_files$site_name_$hcflag_report.txt)
+ 
+ if $nr_of_lines > 0
+	$hcflag = postHC
+ fi
+ 
+ !echo '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'>> $path_to_files$site_name_$hcflag_report.txt
+ !echo $header >> $path_to_files$site_name_$hcflag_report.txt
+ !echo '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'>> $path_to_files$site_name_$hcflag_report.txt
+ !echo 'Site name: ---------- '$site_name>> $path_to_files$site_name_$hcflag_report.txt
+ !echo 'Check date: --------- '$date>> $path_to_files$site_name_$hcflag_report.txt
+ ma current_sw upgradepackage ^state$ 7
+ get current_sw upgradePackageId > $curr_sw_radio
+ $curr_sw_radio =  $curr_sw_radio -s - -r _ 
+ $find_sw = `cat $path_to_UPtxtupgrade_package_list.txt | grep $curr_sw_radio`
+ !echo 'Site is running on: - '$find_sw>> $path_to_files$site_name_$hcflag_report.txt
+endfunc
+
+function tech_check_radionode
+ $detected_tech = ""
+ pr ENodeBFunction=1
+ if $nr_of_mos > 0
+	$detected_tech = $detected_tech" LTE"
+	$flag_LTE = 1
+ fi
+ pr NRCellDU=
+ if $nr_of_mos > 0
+	$detected_tech = $detected_tech" 5G-NR"
+	$flag_5G = 1
+ fi
+ !echo 'Radio techs on site:-'$detected_tech>> $path_to_files$site_name_$hcflag_report.txt
+endfunc
+
+func termpoint_check
+ pr TermPointToMme
+ $nr_of_mme1 = $nr_of_mos
+ st TermPointToMme ena
+ $nr_of_mme2 = $nr_of_mos
+ if $nr_of_mme1 = $nr_of_mme2
+	$mme_check = "Result: OK - MME check is passed."
+ else
+	$mme_check = "Result: NOT OK - Not ALL MME working. "
+	$conclusion = "Result: OK - BUT NEED TO BE CHECKED before upgrade"
+ fi
+ !echo 'MME check: ---------- '$mme_check>> $path_to_files$site_name_$hcflag_report.txt
+endfunc
+
+func hw_check_radionode
+ st FieldReplaceableUnit dis
+
+ if $nr_of_mos = 0
+	$disabled_hw = "Result: OK - No disabled HW units in the node"
+ else
+	$disabled_hw = "Result: NOT OK - Disabled HW found"
+	$conclusion = "Result: OK - BUT NEED TO BE CHECKED before upgrade"
+ fi
+ !echo 'HW status check: ---- '$disabled_hw>> $path_to_files$site_name_$hcflag_report.txt
+endfunc
+
+func lte_cell_check
+ st EUtranCellFDD ena
+ $enabled_cells = $nr_of_mos
+ pr ENodeBFunction=1,EUtranCellFDD=
+ $defined_cells = $nr_of_mos
+ if $defined_cells = $enabled_cells
+	$cell_check_LTE = "Result: OK - All cells are working."
+ else
+	$cell_check_LTE = "Result: NOT OK - Disabled cell detected"
+	$conclusion = "Result: OK - BUT NEED TO BE CHECKED before upgrade"
+ fi
+ !echo 'Cell check: --------- '$cell_check_LTE>> $path_to_files$site_name_$hcflag_report.txt
+endfunc
+
+func upgradepack_check_radionode
+ pr upgradepackage
+ if $nr_of_mos < 3
+	$ready_for_install = "Result: OK - The new sw can be installed"
+ else
+	$ready_for_install = "Result: NOT OK - 3 up sw on the node. Remove at least one"
+	$conclusion = "Result: NOT OK - needs intervention"
+ fi
+ !echo 'Stored sw packages: - '$ready_for_install>> $path_to_files$site_name_$hcflag_report.txt
+endfunc
+
+func cv_number_check
+ cvls
+
+ if nr_of_cvs > 57
+	$cv_number = "Result: OK - The CV check is passed"
+ else
+	$cv_number = "Result: NOT OK - You have to remove some CVs. Max CV number is 47."
+	$conclusion = "Result: NOT OK - needs intervention"
+ fi
+ !echo 'CV number checK: ---- '$cv_number>> $path_to_files$site_name_$hcflag_report.txt
+endfunc
+
+func alarm_check
+l+ $path_to_files$site_name_$hcflag_report_alarms.txt
+
+ alt
+
+l-
+
+if $hcflag = preHC
+  l+ $path_to_files$site_name_pre_alarms.txt
+  alc
+  l-
+else
+  l+ $path_to_files$site_name_post_alarms.txt
+  alc
+  l-
+fi
+
+
+ if $nr_of_alarms = 0
+	$alarm_check = "Result: OK - The site is alarm free"
+ else
+	$alarm_check = "Result: NOT OK - There are alarms in the Node, check it before upgrade"
+	$conclusion = "Result: OK - BUT NEED TO BE CHECKED before upgrade"
+ fi
+ !echo 'Alarm check: -------- '$alarm_check>> $path_to_files$site_name_$hcflag_report.txt
+endfunc
+
+func 5G_node_check
+ st TermPointToENodeB ena
+ if $nr_of_mos > 0
+	$5G_node_X2chk = "Result: OK - The X2 interface is up towards the LTE ."
+ else
+	$5G_node_X2chk = "Result: NOT OK - X2 interface is down."
+	$conclusion = "Result: OK - BUT NEED TO BE CHECKED before upgrade"
+ fi
+ !echo '5G X2 check: -------- '$5G_node_X2chk>> $path_to_files$site_name_$hcflag_report.txt
+ 
+ st NRcell ena
+ if $nr_of_mos > 0
+	$5G_node_cell = "Result: OK - 5G cell is working."
+ else
+	$5G_node_cell = "Result: NOT OK - We have 5G cell in disabled status."
+	$conclusion = "Result: OK - BUT NEED TO BE CHECKED before upgrade"
+ fi
+ !echo '5G CELL check: ------ '$5G_node_cell>> $path_to_files$site_name_$hcflag_report.txt
+endfunc
+
+func sw_check_DUW
+ get 0 logicalname > $site_name
+ 
+ $lineContent = testfile($path_to_files$site_name_$hcflag_report.txt)
+ if $nr_of_lines > 0
+	$hcflag = postHC
+	$header = POST HEALTH CHECK REPORT
+ fi
+ 
+ !echo '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'>> $path_to_files$site_name_$hcflag_report.txt
+ !echo $header >> $path_to_files$site_name_$hcflag_report.txt
+ !echo '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'>> $path_to_files$site_name_$hcflag_report.txt
+ !echo 'Site name: ---------- '$site_name>> $path_to_files$site_name_$hcflag_report.txt
+ !echo 'Check date: --------- '$date>> $path_to_files$site_name_$hcflag_report.txt
+ if $flag_RNC = 1
+	get 0 productName > $temp1
+	!echo 'RNC type: ----------- '$temp1>> $path_to_files$site_name_$hcflag_report.txt
+ fi
+ get ConfigurationVersion=1 currentUpgradePackage > $curr_sw_radio
+ $split_separator = =
+ $temp_var = split($curr_sw_radio)
+ $curr_sw_radio = $temp_var[2]
+ $find_sw = `cat $path_to_UPtxt\upgrade_package_list.txt | grep $curr_sw_radio`
+ !echo 'Site is running on: - '$find_sw >> $path_to_files$site_name_$hcflag_report.txt
+endfunc
+
+func hw_check_DUW
+ st plugin dis
+ if $nr_of_mos = 0
+	$disabled_hw = "Result: OK - No disabled HW units in the DUW node"
+ else
+	$disabled_hw = "Result: NOT OK - Disabled HW found"
+	$conclusion = "Result: OK - BUT NEED TO BE CHECKED before upgrade"
+ fi
+ !echo 'HW status check: ---- '$disabled_hw>> $path_to_files$site_name_$hcflag_report.txt
+endfunc
+ 
+func upgrade_pack_check_DUW
+ pr upgradepackage
+ if $nr_of_mos < 4
+	$ready_for_install = "Result: OK - The new sw can be installed"
+ else
+	$ready_for_install = "Result: NOT OK - 4 or more up sw on the node. Remove at least one"
+	$conclusion = "Result: NOT OK - needs intervention"
+ fi
+ !echo 'Stored sw packages: - '$ready_for_install>> $path_to_files$site_name_$hcflag_report.txt
+endfunc
+
+func rbslocalcell_DUW
+ st cell dis
+ if $nr_of_mos = 0
+	$rbscell = "Result: OK - all RBS local cell is enabled."
+ else
+	$rbscell = "Result: NOT OK - There is disabled RBS local cell."
+	$conclusion = "Result: NOT OK - needs check"
+ fi
+  !echo 'Localcell state: ---- '$rbscell>> $path_to_files$site_name_$hcflag_report.txt
+endfunc
+
+func nbap_check
+ st nbap dis
+ if $nr_of_mos = 0
+	$nbap_check = "Result: OK - IUB link seems ok."administrativeState
+ else
+	$nbap_check = "Result: NOT OK - There is disabled NBAP."
+	$conclusion = "Result: NOT OK - needs check"
+ fi
+  !echo 'IUB in RBS state: --- '$nbap_check>> $path_to_files$site_name_$hcflag_report.txt
+endfunc
+
+func rnc_check
+
+ st iublink dis
+ if $nr_of_mos = 0
+	!echo 'IuB link check ------ Result: OK - No disabled Iublinks' >> $path_to_files$site_name_$hcflag_report.txt
+ else
+	!echo 'IuB link check ------ Result: NOT OK - Disabled iublink number: '$nr_of_mos >> $path_to_files$site_name_$hcflag_report.txt
+ fi
+	
+ pr ^utrancell
+ $number_rnc_cell = $nr_of_mos
+ get ^utrancell= administrativeState 1
+ $unlocked_cell = $nr_of_mos
+ get ^utrancell= operationalState 1
+ $enabled_cell = $nr_of_mos
+	
+ if $unlocked_cell = 0
+	!echo 'RNC cell check1 ------ Result: CRITICAL - all RNC cell locked' >> $path_to_files$site_name_$hcflag_report.txt
+ fi
+	
+ if $unlocked_cell = $number_rnc_cell
+	!echo 'RNC cell check1 ------ Result: OK - all RNC cells are unlocked'  >> $path_to_files$site_name_$hcflag_report.txt
+ fi
+	
+ if $unlocked_cell < $number_rnc_cell
+	!echo 'RNC chell check1 ---- Result: WARNING - not all RNC cells are unlocked' >> $path_to_files$site_name_$hcflag_report.txt
+ fi
+	
+ if $enabled_cell = 0
+	!echo 'RNC chell check2 ---- Result CRITICAL - NO enabled RNC Cell' >> $path_to_files$site_name_$hcflag_report.txt
+ fi
+
+ if enabled_cell = $number_rnc_cell
+	!echo 'RNC cell check2 ------ Result: OK - All RBC cells are enabled'  >> $path_to_files$site_name_$hcflag_report.txt
+ fi
+
+ if $enabled_cell < $number_rnc_cell
+	!echo 'RNC cell check2 ----- Result: WARNING - not all RNC cells are enabled'  >> $path_to_files$site_name_$hcflag_report.txt
+ fi
+       
+ !echo 'Unlocked cells ------ Nr of unlocked cells -'$unlocked_cell'/'$number_rnc_cell  >> $path_to_files$site_name_$hcflag_report.txt
+ !echo 'Enabled cells ------- Nr of enabled cells --'$enabled_cell'/'$number_rnc_cell  >> $path_to_files$site_name_$hcflag_report.txt
+ 
+ ma cs_ranap ranap cnDomainInd 0
+ ma ps_ranap ranap cnDomainInd 1
+ 
+ pr cs_ranap
+ $temp1 = $nr_of_mos
+ 
+ st cs_ranap enabled
+ pv $nr_of_mos
+ 
+ if $nr_of_mos = 0
+	!echo 'RANAP CS check ------ Result: CRITICAL - NO enabled ranap for CS domain' >> $path_to_files$site_name_$hcflag_report.txt
+ fi
+ 
+ if $nr_of_mos < $temp1
+		!echo 'RANAP CS check ------ Result: WARNING - NOT ALL ranap for CS domain is enabled' >> $path_to_files$site_name_$hcflag_report.txt
+ fi
+ 
+ if $nr_of_mos = $temp1
+		!echo 'RANAP CS check ------ Result: OK - ALL ranap for CS domain is enabled' >> $path_to_files$site_name_$hcflag_report.txt
+ fi
+
+ pr ps_ranap
+ $temp1 = $nr_of_mos
+ 
+ st ps_ranap enabled
+ pv $nr_of_mos
+
+ if $nr_of_mos = 0
+	!echo 'RANAP PS check ------ Result: CRITICAL - NO enabled ranap for PS domain' >> $path_to_files$site_name_$hcflag_report.txt
+ fi
+ 
+ if $nr_of_mos < $temp1
+		!echo 'RANAP PS check ------ Result: WARNING - NOT ALL ranap for PS domain is enabled' >> $path_to_files$site_name_$hcflag_report.txt
+ fi
+ 
+ if $nr_of_mos = $temp1
+		!echo 'RANAP PS check ------ Result: OK - ALL ranap for PS domain is enabled' >> $path_to_files$site_name_$hcflag_report.txt
+ fi
+
+ l+ $path_to_files$site_name_$hcflag_mirror_stat.txt
+ lh coremp mirror stat
+ l-
+
+ $temp1 = `cat $path_to_files$site_name_$hcflag_mirror_stat.txt | grep -i active`
+ 
+ if $temp1 ~ Active
+	!echo 'CoreMp check1 ------- Result: OK - Active CoreMp identified' >> $path_to_files$site_name_$hcflag_report.txt
+ else
+	!echo 'CoreMp check1 ------- Result: NOT OK - Somehow no active CoreMp identified' >> $path_to_files$site_name_$hcflag_report.txt
+ fi
+	
+ $temp1 = `cat $path_to_files$site_name_$hcflag_mirror_stat.txt | grep -i passive`
+ 
+ if $temp1 ~ Passive
+	!echo 'CoreMp check2 ------- Result: OK - Passive CoreMp identified' >> $path_to_files$site_name_$hcflag_report.txt
+ else
+	!echo 'CoreMp check2 ------- Result: NOT OK - No Passive CoreMp present' >> $path_to_files$site_name_$hcflag_report.txt
+ fi
+
+ $temp1 = `cat $path_to_files$site_name_$hcflag_mirror_stat.txt |  grep -c " Connected"`
+
+ if $temp1 = 2
+	!echo 'CoreMp check3 ------- Result: OK Both- Peerdisk connected' >> $path_to_files$site_name_$hcflag_report.txt
+ else
+	!echo 'CoreMp check3 ------- Result: NOT OK - Peerdisks not properly connected' >> $path_to_files$site_name_$hcflag_report.txt
+ fi
+ 
+ $temp1 = `cat $path_to_files$site_name_$hcflag_mirror_stat.txt | grep -i write`
+ 
+ if $temp1 ~ Empty
+	!echo 'CoreMp check4 ------- Result: OK - Write log empty' >> $path_to_files$site_name_$hcflag_report.txt
+ else
+	!echo 'CoreMp check4 ------- Result: NOT OK - Write log NOT empty' >> $path_to_files$site_name_$hcflag_report.txt
+ fi
+ 
+ endfunc
+ 
+
+//////////////////////////////////////////////////////////
+/////////////// Main program part/////////////////////////
+//////////////////////////////////////////////////////////
+lt all
+
+detect_nodetype
+
+if $flag_radionode = 1
+	sw_check_radionode
+	tech_check_radionode
+	hw_check_radionode
+	upgradepack_check_radionode
+fi
+
+if $flag_5G = 1
+	5G_node_check
+fi
+
+if $flag_3GDUW = 1
+	sw_check_DUW
+	hw_check_DUW
+	upgrade_pack_check_DUW
+	nbap_check
+	rbslocalcell_DUW
+fi
+
+if $flag_RNC = 1
+    sw_check_DUW
+	hw_check_DUW
+	rnc_check
+	upgrade_pack_check_DUW
+fi
+
+if $flag_DUS = 1
+	sw_check_DUW
+	hw_check_DUW
+	upgrade_pack_check_DUW
+fi
+
+cv_number_check
+
+if $flag_LTE = 1
+	termpoint_check
+	lte_cell_check
+fi
+
+alarm_check
+!echo '////////////////////////////////////////////////////////////////////////////////' >> $path_to_files$site_name_$hcflag_report.txt
+!echo 'Final conclusion: --- '$conclusion>> $path_to_files$site_name_$hcflag_report.txt
+!echo '////////////////////////////////////////////////////////////////////////////////' >> $path_to_files$site_name_$hcflag_report.txt
+!echo '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++' >> $path_to_files$site_name_$hcflag_report.txt
+!cat $path_to_files$site_name_$hcflag_report.txt
