@@ -1,0 +1,15 @@
+## Short script to collect alarsm into file. This one for POST HC.
+gs
+confb
+$path_to_files = /home/shared/ethtoja/scriptek/script_output
+
+lt all
+
+get 0 managedElementId > $site
+
+
+l+ $path_to_files/$site_post_alarms.log
+alc
+l-
+gs
+confb
