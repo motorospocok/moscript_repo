@@ -1,0 +1,5 @@
+#cold restart of DU
+get . primarycoreref > $restart_du
+confb
+accn $restart_du manualrestart 1 1 1 
+confb
