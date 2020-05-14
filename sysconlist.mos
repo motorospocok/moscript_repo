@@ -1,6 +1,8 @@
 //System constant repro by ETHTOJA
 //This script produces system constant setup file from sysconread printout
 //The systemconstant file is called as systemconstant.txt
+//Also possible to put comment for the given systemconst setup
+
 $path_id = /home/shared/ethtoja/scriptek/script_output
 $date = `date "+%Y-%m-%d %H:%M:%S"`
 ma current_sw upgradepackage ^state$ 7
