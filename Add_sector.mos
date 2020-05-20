@@ -1,0 +1,89 @@
+lt all
+
+get Equipment=1,FieldReplaceableUnit=BB-1
+
+get NodeSupport=1,MpClusterHandling=1 primaryCoreRef > $du_ref
+pr $du_ref,riport=
+$port_add = readinput(Please enter port to add to digital unit: )
+pv $port_add
+cr $du_ref,Riport=$port_add
+pr  $du_ref,Riport=$port_add
+st  $du_ref,Riport=$port_add
+
+ma Radio_Units Equipment=1,FieldReplaceableUnit=
+mr Radio_Units $du_ref
+pr Radio_Units
+$RU_add = readinput(Please enter the Radio Unit name to be added: )
+cr Equipment=1,FieldReplaceableUnit=$RU_add
+cr Equipment=1,FieldReplaceableUnit=$RU_add,Riport=DATA_1
+cr Equipment=1,FieldReplaceableUnit=$RU_add,Riport=DATA_2
+$RU_rfport = readinput(Please enter the number of RF ports of this Radio: )
+
+$port[1] = A
+$port[2] = B
+$port[3] = C
+$port[4] = D
+
+$i = 1
+for $RU_rfport
+ cr Equipment=1,FieldReplaceableUnit=$RU_add,RfPort=$port[$i]
+ $i = $i + 1
+done
+lpr Equipment=1,FieldReplaceableUnit=$RU_add
+
+
+pr Equipment=1,RiLink=
+$rilink_name = readinput(Please give me the Rilink name: )
+lt root
+lt all
+
+
+ma empty_Riport  Equipment=1,FieldReplaceableUnit=.*,Riport= reservedby 0
+pr empty_Riport
+$Riport_ID1 = readinput(Please enter proxy of the RilinkRef 1 - )
+$Riport_ID2 = readinput(Please enter proxy of the RilinkRef 2 - )
+$Riport_MO1 = ldn($Riport_ID1)
+$Riport_MO2 = ldn($Riport_ID2)
+
+
+gs+
+crn Equipment=1,RiLink=$rilink_name
+riPortRef1 $Riport_MO1
+riPortRef2 $Riport_MO2
+end
+gs-
+
+st $du_ref,Riport=$port_add
+lst Equipment=1,FieldReplaceableUnit=$RU_add
+st Equipment=1,RiLink=$rilink_name
+st NodeSupport=1,SectorEquipmentFunction=
+$sec_num = readinput(Enter sectorNumber: )
+pr AntennaUnitGroup=.*,RfBranch=
+$RfBranch_name = readinput(Please enter the RfBranch Naming name Convention: )
+pr AntennaSubunit=
+$ant_sub = readinput(Please Enter Antenna Subunit name: )
+cr Equipment=1,AntennaUnitGroup=$sec_num
+cr Equipment=1,AntennaUnitGroup=$sec_num,AntennaUnit=1
+cr Equipment=1,AntennaUnitGroup=$sec_num,AntennaUnit=1,AntennaSubunit=$ant_sub
+
+$i = 1
+for $RU_rfport
+ cr Equipment=1,AntennaUnitGroup=$sec_num,AntennaUnit=1,AntennaSubunit=$ant_sub,AuPort=$i
+ $i = $i + 1
+done
+
+$i = 1
+for $RU_rfport
+ confb
+ cr Equipment=1,AntennaUnitGroup=$sec_num,RfBranch=$RfBranch_name-$i
+ $allbranch = $allbranch Equipment=1,AntennaUnitGroup=$sec_num,RfBranch=$RfBranch_name-$i
+ set Equipment=1,AntennaUnitGroup=$sec_num,RfBranch=$RfBranch_name-$i rfPortRef Equipment=1,FieldReplaceableUnit=$RU_add,Rfport=$port[$i]
+ set Equipment=1,AntennaUnitGroup=$sec_num,RfBranch=$RfBranch_name-$i auPortRef Equipment=1,AntennaUnitGroup=$sec_num,AntennaUnit=1,AntennaSubunit=$ant_sub,AuPort=$i
+ $i = $i + 1
+ confb
+done
+
+confb
+cr NodeSupport=1,SectorEquipmentFunction=$sec_num
+set NodeSupport=1,SectorEquipmentFunction=$sec_num rfBranchRef $allbranch
+confb
