@@ -1,0 +1,91 @@
+####### Function declaration parts start here ##################
+ 
+function display_rilink
+ s+
+ ma rilink_list Equipment=1,RiLink=
+  for $mo in rilink_list
+  $rilink = ldn($mo)
+  get $mo riPortRef1 > $ref1
+  get $mo riPortRef2 > $ref2
+  $split_separator = ,
+  $rilink1 = split($rilink)
+  $ref11 = split($ref1)
+  $ref22 = split($ref2)
+  $split_separator = =
+  $ref3 = split($ref11[1])
+  $ref4 = split($ref22[1])
+  !echo $ref3[2]" +++ "$ref11[2]" <-- "$rilink1[2]" --> "$ref22[2]" +++ "$ref4[2] >> rilink_list.log
+ done
+endfunc
+ 
+function list_cell_config
+s+
+ ma defined_cells ENodeBFunction=1,EUtranCellFDD=
+ for $mo in defined_cells
+  get $mo eUtranCellFDDId > $cell  
+  get $mo ^cellid$ > $cell_ID
+  get $mo physicalLayerSubCellId > $sub_cellid
+  get $mo physicalLayerCellIdGroup > $group_cellid
+  get $mo physicalLayerCellId$ > $phy_cellid
+  get $mo arfcndl$ > $cell_arfcn
+  get $mo dlChannelBandwidth > $cell_BW
+  !echo "--------------------------------------------------"  >> temp_cell_list.log
+  !echo "Cell name ----------------- "$cell >> temp_cell_list.log
+  !echo "Cell ID ------------------- "$cell_ID  >> temp_cell_list.log
+  !echo "physicalLayerCellIdGroup -- "$group_cellid  >> temp_cell_list.log
+  !echo "physicalLayerSubCellId ---- "$sub_cellid  >> temp_cell_list.log
+  !echo "physicalLayerCellId ------- "$phy_cellid  >> temp_cell_list.log
+  !echo "arfdn DL ------------------ "$cell_arfcn  >> temp_cell_list.log
+  !echo "dlChannelBandwidth -------- "$cell_BW  >> temp_cell_list.log
+  !echo "--------------------------------------------------"  >> temp_cell_list.log
+done
+endfunc
+ 
+function list_DU_ports
+
+ !echo '************** Free Digital Unit Ports ***************' >> tmenu_not_reserved_ports.log
+ !echo ' '  >> tmenu_not_reserved_ports.log
+ !echo '************** Reserved Digital Unit Ports ***************' >> tmenu_reserved_ports.log
+ !echo ' '  >> tmenu_reserved_ports.log
+
+
+ get NodeSupport=1,MpClusterHandling=1 primaryCoreRef > $currentDU
+ ma defined_DU_port $currentDU,RiPort=
+ $split_separator = ,
+
+ $found_candidate = 0
+ for $mo in defined_DU_port
+  $temp = ldn($mo)
+  get $mo reservedby > $reservation
+  $temp1 = split($reservation)
+  if $reservation ~ RiLink
+   !echo $temp "is reserved: "$temp1[2] >> tmenu_reserved_ports.log
+   else
+   !echo $temp "is NOT reserved  - can be used for expansion " >> tmenu_not_reserved_ports.log
+   $found_candidate = 1
+  fi
+ done
+
+ if $found_candidate = 0
+  !echo $temp "No free ports have been found" >> tmenu_not_reserved_ports.log
+  !echo $temp "Please define a new one if possible" >> tmenu_not_reserved_ports.log
+ fi
+
+ !echo ' '  >> tmenu_not_reserved_ports.log
+ !echo '**********************************************' >> tmenu_not_reserved_ports.log
+ !echo ' '  >> tmenu_reserved_ports.log
+ !cat tmenu_reserved_ports.log tmenu_not_reserved_ports.log >> tmenu_all.log
+ !cat tmenu_all.log
+ !rm tmenu*
+
+endfunc
+ 
+####### Function declaration parts end ##################
+ 
+####################### Following FUNCTIONS are declared above #######################
+ 
+## display_rilink
+## list_cell_config
+## list_DU_ports
+ 
+####################### END OF FUNCTION LIST #######################
