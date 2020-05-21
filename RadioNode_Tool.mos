@@ -209,8 +209,10 @@ function ADD_ant_sector
   pr Radio_Units
   $abc = readinput(Please enter proxy number of the radio to be used for this sector)
   get $abc fieldReplaceableUnitId > $RU_add
+  lpr FieldReplaceableUnit=$RU_add,Rfport=
+  $RU_rfport = $nr_of_mos
  fi
- 
+ st NodeSupport=1,SectorEquipmentFunction=
  $sec_num = readinput(Enter sectorNumber: )
  pr AntennaUnitGroup=.*,RfBranch=
  $RfBranch_name = readinput(Please enter the RfBranch Naming name Convention: )
@@ -294,6 +296,9 @@ for ever
 	fi
 	if $choice = 6
 	 ADD_rilink
+	fi
+	if $choice = 7
+	 ADD_ant_sector
 	fi
 	if $choice = 8
 	 ADD_du_port
