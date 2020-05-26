@@ -5,10 +5,17 @@ lt all
 
 
 get 0 ^managedElementId > $site_name
+
+## Check data is duplicated or not
+##If duplicated then delete the lines and re-write them below with routines
+
 !cat 5G_cell_data.txt | sed '/$site_name/d' > 5G_cell_data2.txt
 !rm 5G_cell_data.txt
 !cp 5G_cell_data2.txt 5G_cell_data.txt
 !rm 5G_cell_data2.txt
+
+
+
 get GNBCUCPFunction=1 gNbid$ > $gnode_ID
 get GNBCUCPFunction=1 gNBIdLength > $gnode_length
 get GNBCUCPFunction=1 pLMNId > $gnode_plmn
