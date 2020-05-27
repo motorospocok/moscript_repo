@@ -1,8 +1,6 @@
-#This script collect GNB cell data and marks not used cells with NEVER_UNLOCKED text
-#Also checks that the site is already stored and doing update on cell data - line duplication issue solved.
+#This script supports the 5G_NR_Relations.mos scripts
 
 lt all
-
 
 get 0 ^managedElementId > $site_name
 !cat 5G_cell_data.txt | sed '/$site_name/d' > 5G_cell_data2.txt
@@ -15,7 +13,9 @@ get GNBCUCPFunction=1 pLMNId > $gnode_plmn
 
 ma nrcells GNBDUFunction=1,NRCellDU=
 st nrcells
-for $mo in nrcells
+for $mo in nrcells  
+  get $mo nRTAC > $nRTAC
+  get $mo nRPCI > $nRPCI
 	get $mo ssbFrequency$ > $ssb_freq
 	get $mo nRCellDUId > $cell_name
 	if $ssb_freq = 0
@@ -24,12 +24,13 @@ for $mo in nrcells
 	if $ssb_freq !~ [0-9]
 		$ssb_freq = NEVER_UNLOCKED
 	fi
+  get GNBCUCPFunction=1,NRCellCU=$cell_name nCI > $nCI
 	get $mo cellLocalId > $cell_local
 	get $mo ssbSubCarrierSpacing > $ssb_subspace
 	get $mo ssbPeriodicity > $ssb_period
     get $mo ssbOffset > $ssb_offset
 	get $mo ssbDuration > $ssb_duration
-    !echo $site_name','$gnode_ID','$gnode_length','$gnode_plmn[mcc]','$gnode_plmn[mnc]','$cell_name','$cell_local','$ssb_freq','$ssb_subspace','$ssb_period','$ssb_offset','$ssb_duration >> 5G_cell_data.txt
+    !echo $site_name','$gnode_ID','$gnode_length','$gnode_plmn[mcc]','$gnode_plmn[mnc]','$cell_name','$cell_local','$ssb_freq','$ssb_subspace','$ssb_period','$ssb_offset','$ssb_duration','$nCI','$nRTAC','$nRPCI >> 5G_cell_data.txt
 done
 
                                                 
