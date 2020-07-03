@@ -1,17 +1,58 @@
 function collect_bb_data
- ma enabled_HW FieldReplaceableUnit=  operationalState 1
-
+ ma enabled_HW FieldReplaceableUnit=  operationalState 1 
  for $mo in enabled_HW
   get $mo productData > $hw_data
   get $mo fieldReplaceableUnitId > $mo_name
-  !echo $site_name';'$mo_name';'$hw_data[productName]';'$hw_data[productNumber]';'$hw_data[productRevision]';'$hw_data[serialNumber]';'$hw_data[productionDate] >> ~/hw_table.log
+  !echo $site_name';RadioNode;'$mo_name';'$hw_data[productName]';'$hw_data[productNumber]';'$hw_data[productRevision]';'$hw_data[serialNumber]';'$hw_data[productionDate] >> hw_table.csv
  done
 endfunc
 
+function collect_rilink_data
+ ma active_rilink rilink operationalState 1 
+ for $mo in active_rilink
+  get $mo riPortRef1 > $ref1
+ 
+  $split_separator = ,
+  $ref1a = split($ref1) 
+  $split_separator = =
+  $ref1b_1 = split($ref1a[1]) 
+  $ref1b_2 = split($ref1a[2])
 
-lt all
+  get $mo riPortRef2 > $ref2
+  $split_separator = ,
+  $ref2a = split($ref2) 
+  $split_separator = =
+  $ref2b_1 = split($ref2a[1]) 
+  $ref2b_2 = split($ref2a[2])
+  !echo $site_name','$ref1b_1[2]';'$ref1b_2[2]';'$ref2b_1[2]';'$ref2b_2[2] >> cpri_table.csv
+ done                 
+endfunc
+
+function collect_rfport
+ ma rfport_list rfport operationalState 1
+ for $mo in rfport_list
+  $rfport1 = ldn($mo)
+  $rfport1 = $rfport1 -s Equipment=1,FieldReplaceableUnit=
+  get $mo reservedby > $rf_branch1
+  unset $split_separator
+  $rf_branch2 = split($rf_branch1)
+  $split_separator = ,
+  $rf_branch3 = split($rf_branch2[6])
+  get $rf_branch3[3] reserved > $sector1
+  $split_separator = ,
+  $sector2 = split($sector1)  
+  !echo $site_name';'$rfport1';'$rf_branch3[2]';'$rf_branch3[3]';'$sector2[2] >> rfbracnh_table.csv
+ done
+endfunc
+
+                            
+#lt all
 st field ena
 pv $nr_of_mos
 if $nr_of_mos > 0
+ get 0 networkManagedElementId > $site_name
  collect_bb_data
+ collect_rilink_data
+ collect_rfport
 fi
+
