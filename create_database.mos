@@ -1,0 +1,17 @@
+function collect_bb_data
+ ma enabled_HW FieldReplaceableUnit=  operationalState 1
+
+ for $mo in enabled_HW
+  get $mo productData > $hw_data
+  get $mo fieldReplaceableUnitId > $mo_name
+  !echo $site_name';'$mo_name';'$hw_data[productName]';'$hw_data[productNumber]';'$hw_data[productRevision]';'$hw_data[serialNumber]';'$hw_data[productionDate] >> ~/hw_table.log
+ done
+endfunc
+
+
+lt all
+st field ena
+pv $nr_of_mos
+if $nr_of_mos > 0
+ collect_bb_data
+fi
