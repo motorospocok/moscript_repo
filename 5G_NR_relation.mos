@@ -1,0 +1,197 @@
+lt all
+
+$5G_cellfind = $2
+$5G_cellfind = BUE17N1_21
+
+
+$5G_DATA = `cat 5G_cell_data.txt | grep -i $5G_cellfind`
+$split_separator = ,
+
+$temp = split($5G_DATA)
+
+
+## Parameter mapping section
+
+$site_name = $temp[1]
+$gnb_id = $temp[2]
+$gnb_length = $temp[3]
+$mcc = $temp[4]
+$mnc = $temp[5]
+$gcell_name = $temp[6]
+$gcell_locid = $temp[7]
+$ssb_freq = $temp[8]
+$ssb_subspace = $temp[9]
+$ssb_period = $temp[10]
+$ssb_offset = $temp[11]
+$ssb_duration = $temp[12]
+$nCI = $temp[13]
+$nRTAC = $temp[14]
+$nRPCI = $temp[15]
+
+## Parameter mapping section end
+
+
+## Function declaration part
+
+function menu_build
+
+ !echo '************************************************' >> temp_error1.txt
+ !echo '** ERROR: The cell is not found the database. **' >> temp_error1.txt
+ !echo '** Execute 5G celldata refreshment.           **' >> temp_error1.txt
+ !echo '** Script execution is stopped                **' >> temp_error1.txt
+ !echo '************************************************' >> temp_error1.txt
+
+ !echo '***********************************************************' >> temp_error2.txt
+ !echo '** ERROR: The cell is found but SSB frequency is missing.**' >> temp_error2.txt
+ !echo '** Do NR cell data refresh with unlocked 5G cell         **' >> temp_error2.txt
+ !echo '** Script execution is stopped                           **' >> temp_error2.txt
+ !echo '***********************************************************' >> temp_error2.txt
+
+ !echo '******************************************' >> temp_error3.txt
+ !echo '** This NR frequency is already defined **' >> temp_error3.txt
+ !echo '******************************************' >> temp_error3.txt
+
+ !echo '**********************************' >> temp_error31.txt
+ !echo '** NR frequency is created now  **' >> temp_error31.txt
+ !echo '**********************************' >> temp_error31.txt
+
+ !echo '***********************************************' >> temp_error4.txt
+ !echo '** This external NR node  is already defined **' >> temp_error4.txt
+ !echo '***********************************************' >> temp_error4.txt
+
+ !echo '*************************************' >> temp_error41.txt
+ !echo '** External NR node is created now **' >> temp_error41.txt
+ !echo '*************************************' >> temp_error41.txt
+
+ !echo '********************************************' >> temp_error5.txt
+ !echo '** This NRFreqRelation is already defined **' >> temp_error5.txt
+ !echo '********************************************' >> temp_error5.txt
+
+ !echo '********************************************' >> temp_error5.txt
+ !echo '** This NRFreqRelation is already defined **' >> temp_error5.txt
+ !echo '********************************************' >> temp_error5.txt
+
+ !echo '**********************************************' >> temp_error6.txt
+ !echo '** This ExternalNRCellCU is already defined **' >> temp_error6.txt
+ !echo '**********************************************' >> temp_error6.txt
+ 
+ !echo '*****************************************' >> temp_error61.txt
+ !echo '** This ExternalNRCellCU is creatednow **' >> temp_error61.txt
+ !echo '*****************************************' >> temp_error61.txt
+
+ !echo '******************************************' >> temp_error0.txt
+ !echo '** The relation is defined successfully **' >> temp_error0.txt
+ !echo '******************************************' >> temp_error0.txt
+
+endfunc
+
+function check_nrfreq
+ mr nr_freq
+ ma nr_freq NRNetwork=1,NRFrequency= arfcnValueNRDl $ssb_freq
+ mr nr_freq NRNetwork=1,NRFrequency= smtcPeriodicity !$ssb_period
+ mr nr_freq NRNetwork=1,NRFrequency= smtcOffset !$ssb_offset
+ mr nr_freq NRNetwork=1,NRFrequency= smtcScs !$ssb_subspace
+ mr nr_freq NRNetwork=1,NRFrequency= smtcDuration  !$ssb_duration
+
+ pr nr_freq
+ if $nr_of_mos = 0
+  gs+
+  crn GNBCUCPFunction=1,NRNetwork=1,NRFrequency=$ssb_freq-$ssb_subspace-$ssb_period-$ssb_offset-$ssb_duration
+  arfcnValueNRDl $ssb_freq
+  bandListManual 
+  smtcDuration $ssb_duration
+  smtcOffset $ssb_offset
+  smtcPeriodicity $ssb_period
+  smtcScs $ssb_subspace
+  end
+  gs- 
+  mr nr_freq
+  ma nr_freq GNBCUCPFunction=1,NRNetwork=1,NRFrequency=$ssb_freq-$ssb_subspace-$ssb_period-$ssb_offset-$ssb_duration
+  !cat temp_error31.txt     
+  pr nr_freq
+  $temp1 = readinput( HIT ENTER TO CONTINUE )
+ else
+  !cat temp_error3.txt
+  pr nr_freq
+  $temp1 = readinput( HIT ENTER TO CONTINUE )
+
+ fi
+
+endfunc          
+
+
+function check_ext_nr_node
+ 
+ pr GNBCUCPFunction=1,NRNetwork=1
+ if $nr_of_mos = 0
+  gs
+  crn GNBCUCPFunction=1,NRNetwork=1
+  end
+  gs
+ fi
+	
+ ## This function checks ExternalGNBCUCPFunction MO class and calls create function
+ mr ext_nr_node
+ ma ext_nr_node GNBCUCPFunction=1,NRNetwork=1,ExternalGNBCUCPFunction= gNBId $gnb_id
+ mr ext_nr_node GNBCUCPFunction=1,NRNetwork=1,ExternalGNBCUCPFunction= gNBIdLength $gnb_length
+ get ext_nr_node pLMNId > $temp_plmn
+ 
+ if $temp_plmn[mnc] = !$mnc && $temp_plmn[mcc] = !$mcc
+  mr ext_nr_node
+ fi
+ unset $temp_plmn
+ pr ext_nr_node
+ 
+ if $nr_of_mos = 0
+  gs
+  crn GNBCUCPFunction=1,NRNetwork=1,ExternalGNBCUCPFunction=$site_name
+  gNBId $gnb_id
+  gNBIdLength $gnb_length
+  pLMNId mcc=$mcc,mnc=$mnc
+  end  
+  gs
+  mr ext_nr_node
+  ma ext_nr_node GNBCUCPFunction=1,NRNetwork=1,ExternalGNBCUCPFunction=$site_name
+  !cat temp_error41.txt
+  pr ext_nr_node
+  $temp1 = readinput( HIT ENTER TO CONTINUE )   
+ else
+  !cat temp_error4.txt
+  pr ext_nr_node
+  $temp1 = readinput( HIT ENTER TO CONTINUE )
+ fi
+
+endfunc          
+
+function check_ext_nr_cell
+
+endfunc
+
+# END of function declaration part 
+
+menu_build
+
+$error_menu = 0
+$error_flag = 0
+
+if $5G_DATA !~ ,
+ $error_flag = 1
+ $error_menu = 1
+fi
+
+if $ssb_freq = NEVER_UNLOCKED
+ $error_flag = 1
+ $error_menu = 2
+fi
+
+if $error_flag = 0
+ check_nrfreq
+fi
+
+if $error_flag = 0
+ check_ext_nr_node
+fi
+
+if $error_flag = 0
+ check_ext_nr_cell
+fi                                                      
