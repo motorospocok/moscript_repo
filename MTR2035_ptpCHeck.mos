@@ -1,0 +1,40 @@
+#MTR20.35 supportscript by ethtoja
+#This script should be run BEFORE the upgrade
+#
+#Early Delivery note MTR 20.35 chapter 4.1.1:
+#
+#If ptpPathTimeError attribute exists on Baseband Radio Node with a value of 1000 ns or higher, 
+#before upgrade to the latest software the attribute needs to be updated 
+#either with the new default value of 750 ns, or set the value in accordance with MOM description.
+#This update is crucial if TDD cells were up and running prior to the upgrade.
+
+function check_ptp_setup
+ for $mo in ptpPort
+	get $mo ptpPathTimeError > $ptpErr
+	if $ptpErr = 1000
+		set $mo ptpPathTimeError 750
+		!echo $site_name ' Attribute ptpPathTimeError is 1000. Now set to new default 750' >> ~/ptp_set_result.txt
+	fi
+    if $ptpErr > 1000
+		set $mo ptpPathTimeError 750
+		!echo $site_name ' Attribute ptpPathTimeError is '$ptpErr'. Now set to new default 750 - set correctly if necessary' >> ~/ptp_set_result.txt
+	fi
+	if $ptpErr < 1000
+		!echo $site_name' Attribute PtpPathTimeError is '$ptpErr'. No applied action'  >> ~/ptp_set_result.txt
+	fi
+ done
+endfunc
+
+confb
+gs
+lt all
+get 0 ^managedElementId$ > $site_name	
+ ma ptpPort PtpBcOcPort=
+ pr ptpPort
+ if $nr_of_mos > 0
+	check_ptp_setup
+ else
+	!echo $site_name 'No PTP defined. No applied action' >> ~/ptp_set_result.txt
+ fi
+confb
+gs
