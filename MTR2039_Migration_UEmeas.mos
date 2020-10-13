@@ -1,0 +1,35 @@
+#MTR 20_39 migration script by ethtoja
+#Based on MTR 20.39 EDN Chapter 4.1.3.5
+#This script migrates the UeMeasControl=1 MO structure to the new MO config
+#Make sure when this script is used moshell uservariable exclude_deprecated=0
+
+gs
+confb
+lt all
+cr GNBCUCPFunction=1,UeMc=1
+ma NR_cell_group GNBCUCPFunction=1,NRCellCU=
+for $mo in NR_cell_group
+	$temp = rdn($mo)
+	get $mo nRCellCUId > $profile_name
+	cr GNBCUCPFunction=1,UeMc=1,UeMCCellProfile=$profile_name
+	get $temp,UeMeasControl=1 filterCoefficientNrRsrp > $filter1
+	get $temp,UeMeasControl=1 filterCoefficientNrRsrq > $filter2
+	get $temp,UeMeasControl=1 sMeasure > $smeas1
+	set GNBCUCPFunction=1,UeMc=1,UeMCCellProfile=$profile_name filterCoefficientNrRsrpLow $filter1
+	set GNBCUCPFunction=1,UeMc=1,UeMCCellProfile=$profile_name filterCoefficientNrRsrqLow $filter2
+	if $smeas1 ~ -
+	 set GNBCUCPFunction=1,UeMc=1,UeMCCellProfile=$profile_name sMeasure $smeas1
+  else
+   set GNBCUCPFunction=1,UeMc=1,UeMCCellProfile=$profile_name sMeasure
+	fi
+
+	set $mo ueMCCellProfileRef GNBCUCPFunction=1,UeMc=1,UeMCCellProfile=$profile_name
+done
+$ask = readinput(do you want complete switch ueMCCellProfileEnabled  ? ) 
+if $ask ~ y
+	set GNBCUCPFunction=1,UeMc=1 ueMCCellProfileEnabled true
+else
+	set GNBCUCPFunction=1,UeMc=1 ueMCCellProfileEnabled false
+fi
+gs
+confb

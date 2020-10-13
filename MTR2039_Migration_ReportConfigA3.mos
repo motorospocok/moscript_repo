@@ -1,0 +1,49 @@
+#MTR 20_39 migration script by ethtoja
+#Based on MTR 20.39 EDN Chapter 4.1.3.4
+#This script migrates the UeMeasControl=1,ReportConfigA3=1 MO structure to the new MO config
+#Make sure when this script is used moshell uservariable exclude_deprecated=0
+
+gs
+confb
+lt all
+cr GNBCUCPFunction=1,IntraFreqMC=1
+ma NR_cell_group GNBCUCPFunction=1,NRCellCU=
+for $mo in NR_cell_group
+	$temp = rdn($mo)
+	get $mo nRCellCUId > $profile_name
+	cr GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$profile_name
+	get $temp,UeMeasControl=1,ReportConfigA3=1 hysteresis > $hist1
+	get $temp,UeMeasControl=1,ReportConfigA3=1 endcActionA3EvalFail > $endc1
+	get $temp,UeMeasControl=1,ReportConfigA3=1 offset > $off1
+	get $temp,UeMeasControl=1,ReportConfigA3=1 timeToTrigger > $timeTo1
+	get $temp,UeMeasControl=1,ReportConfigA3=1 triggerQuantity > $trigq1
+	
+	if $endc1 ~ IGNORE
+		$endc2 = 1
+	else
+		$endc2 = 0
+	fi
+	
+	if $trigq1 ~ RSRP
+		set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$profile_name endcActionEvalFail $endc2
+		set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$profile_name betterSpCellTriggerQuantity 0
+		set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$profile_name rsrpBetterSpCell hysteresis=$hist1
+		set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$profile_name rsrpBetterSpCell offset=$off1
+		set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$profile_name rsrpBetterSpCell timeToTrigger=$timeTo1
+	else
+		set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$profile_name endcActionEvalFail $endc2
+		set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$profile_name betterSpCellTriggerQuantity 1
+		set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$profile_name rsrqBetterSpCell hysteresis=$hist1
+		set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$profile_name rsrqBetterSpCell offset=$off1
+		set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$profile_name rsrqBetterSpCell timeToTrigger=$timeTo1
+	fi
+	set $mo intraFreqMCCellProfileRef GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$profile_name
+done
+$ask = readinput(do you want complete switch intraFreqMCCellProfileUsage ? ) 
+if $ask ~ y
+	set GNBCUCPFunction=1,IntraFreqMC=1 intraFreqMCCellProfileUsage 1
+else
+	set GNBCUCPFunction=1,IntraFreqMC=1 intraFreqMCCellProfileUsage 0
+fi
+gs
+confb
