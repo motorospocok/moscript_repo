@@ -93,7 +93,8 @@ function create_TermPointToGNB
    confb
  fi
  mr tempgr
- ma tempgr TermPointToGNB= ^ipaddress$ $4
+ pv $4
+ ma tempgr TermPointToGNB= ^ipaddress$ $4$
  pr tempgr
  if $nr_of_mos > 0
   get tempgr termPointToGNBId > $temp1
