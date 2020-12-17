@@ -1,0 +1,15 @@
+*********** A T T E N T I O N ****************
+
+Unkown software identified.
+You have to define the sw level.
+
+Some examples:
+20Q4 GA Radionode CPRI NR LOW BAND
+20Q4 GA Radionode e-CPRI NR MID BAND
+W20Q4 RNC SW
+L20Q4 DUS SW
+W20Q4 DUW SW
+
+Type 'none' to skip record
+
+**********************************************

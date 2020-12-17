@@ -1,0 +1,58 @@
+// Translate CXP package id program V1.1 by Toja
+// uses upgradepackage list.txt
+// Version 1.0
+// Version 1.1
+// Added cxp swr record add function
+
+// Configure the path variables below
+$upgrade_txt_path = /home/ETHTOJA/script_develop/upgrade_package_list.txt
+$menu1 = /home/ETHTOJA/script_develop/query_menu.txt
+
+
+ function add_new_sw
+
+  !cat /home/ETHTOJA/script_develop/query_menu.txt
+  pv $1
+  
+  $add_SW_version = readinput( Please type your choice :)
+  if $add_SW_version ~ ex1
+   !echo '$1 $ex1' >> $upgrade_txt_path
+  fi
+  if $add_SW_version ~ ex2
+   !echo '$1 $ex2' >> $upgrade_txt_path
+  fi
+  if $add_SW_version ~ ex3
+   !echo '$1 $ex3' >> $upgrade_txt_path
+  fi
+  if $add_SW_version ~ ex4
+   !echo '$1 $ex4' >> $upgrade_txt_path
+  fi
+  if $add_SW_version ~ ex5
+   !echo '$1 $ex5' >> $upgrade_txt_path
+  fi
+  if $add_SW_version !~ none && $add_SW_version !~ ex
+   !echo '$1 $add_SW_version' >> $upgrade_txt_path
+  fi
+  $find_sw = `cat $upgrade_txt_path | grep $curr_sw_radio`
+ endfunc
+
+get 0 ^managedElementId > $site
+lt upgradepac
+
+ ma current_sw upgradepackage ^state$ 7
+ get current_sw upgradePackageId > $curr_sw_radio
+ mr current_sw
+ 
+ $curr_sw_radio =  $curr_sw_radio -s - -r _ 
+ $find_sw = `cat $upgrade_txt_path | grep $curr_sw_radio`
+ 
+ if $find_sw !~ CXP
+	add_new_sw $curr_sw_radio
+ fi
+ 
+ !echo '*****************************************************************************************' >> ~/$site_SW_TEMP.log
+ !echo 'Site is running on: - '$find_sw>> ~/$site_SW_TEMP.log
+ !echo '*****************************************************************************************' >> ~/$site_SW_TEMP.log
+ !cat ~/$site_SW_TEMP.log
+ !rm ~/$site_SW_TEMP.log
+
