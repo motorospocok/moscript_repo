@@ -1,14 +1,56 @@
 #Simple script to print structure state with proxy
 #Same output as moshell command lst {ldn}
-#Example tlst 44,utran
+#Example tlst.mos 44 or tlst.mos 44 ena
+#Following line usefull to add into .moshellrc: alias tlst run <path_to_script>/tlst.mos
 
-if $1 !~ ,
- $temp1 = ldn($1)
- lst $temp1
+#The moshell scripting handles the userinput $1 $2 parameters in weird way
+#so the function call contains the $1 and $2 - these are also internal parameters of the functions
+
+###### Function delcaration part #####
+
+#Function when no $2 in the command
+
+function list_mo1
+ if $1 !~ ,
+  $temp1 = ldn($1)
+  lst $temp1
+ else
+  $split_separator = ,
+  $temp1 = split($1)
+  pv $temp1
+  $temp2 = ldn($temp1[1])
+  lst $temp2,$temp1[2]
+ fi
+endfunc 
+
+#Function when $2 has value
+
+function list_mo2
+ if $1 !~ ,
+  $temp1 = ldn($1)
+  lst $temp1 $2
+ else
+  $split_separator = ,
+  $temp1 = split($1)
+  pv $temp1
+  $temp2 = ldn($temp1[1])
+  lst $temp2,$temp1[2] $2
+ fi
+endfunc
+
+###### Function delcaration part end #####
+
+### Main program below ######
+
+if $2 ~ [A-Z] || $2 ~ [a-z]
+ $2nd_flag = 1
 else
- $split_separator = ,
- $temp1 = split($1)
- pv $temp1
- $temp2 = ldn($temp1[1])
- lst $temp2,$temp1[2]
+ $2nd_flag = 0
 fi
+
+if $2nd_flag = 0
+ list_mo1 $1
+else
+ list_mo2 $1 $2
+fi
+
