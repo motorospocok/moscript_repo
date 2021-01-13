@@ -1,0 +1,14 @@
+#Simple script to print structure state with proxy
+#Same output as moshell command lst {ldn}
+#Example tlst 44,utran
+
+if $1 !~ ,
+ $temp1 = ldn($1)
+ lst $temp1
+else
+ $split_separator = ,
+ $temp1 = split($1)
+ pv $temp1
+ $temp2 = ldn($temp1[1])
+ lst $temp2,$temp1[2]
+fi
