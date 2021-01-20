@@ -1,0 +1,29 @@
+#Examples of customizable settings (refer to the moshell file to see a complete list
+#of supported user variables or print them using the "uv" command)
+#take off the # sign at beginning of line to uncomment
+
+#prompt_highlight=1
+#set_window_title=1
+exclude_deprecated=0
+polu_confirmupgrade=0
+
+#Alias examples:
+alias ter te log read
+alias tec te log clear
+alias llc llog -c
+alias ll llog
+alias lll llog -l
+alias err te log read |grep ERROR:
+
+jarxmldir=/home/shared/ethtoja/jarxml
+ip_database=/home/shared/ethtoja/sitefiles/ipdatabase
+alias rstdu run /home/shared/ethtoja/scriptek/rst_DU.mos
+alias trset run /home/shared/ethtoja/scriptek/trace_setup.mos
+alias sysconlist run /home/shared/ethtoja/scriptek/sysconlist.mos
+alias swq run /home/shared/ethtoja/scriptek/query_SW.mos
+alias tmon run /home/shared/ethtoja/scriptek/trace_terminal.mos
+alias dcl run /home/shared/ethtoja/scriptek/declast.mos
+alias tlpr run /home/shared/ethtoja/scriptek/tlpr.mos
+alias tlst run /home/shared/ethtoja/scriptek/tlst.mos
+alias tldeb run /home/shared/ethtoja/scriptek/tldeb.mos
+alias tlbl run /home/shared/ethtoja/scriptek/tlbl.mos
