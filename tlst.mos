@@ -23,7 +23,7 @@ function list_mo1
  fi
 endfunc 
 
-#Function when $2 has value
+#Function when $2 has value e.g lst 234 ena
 
 function list_mo2
  if $1 !~ ,

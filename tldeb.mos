@@ -1,0 +1,34 @@
+#Simple script to deblock structure with proxy
+#Same output as moshell command ldeb {ldn}
+#Example ldeb 44
+
+function deblock1
+ $execute = readinput(Is ok to deblock y/n ? )
+ if $execute ~ y || $execute ~ Y
+  ldeb $1
+  lst $1
+ fi
+endfunc
+
+
+function deblock2
+ $execute = readinput(Is ok to deblock y/n ? )
+ if $execute ~ y || $execute ~ Y
+  ldeb $1,$2
+  lst $1,$2
+ fi
+endfunc
+
+
+if $1 !~ ,
+ $temp1 = ldn($1)
+ lst $temp1
+ deblock1 $temp1
+else
+ $split_separator = ,
+ $temp1 = split($1)
+ pv $temp1
+ $temp2 = ldn($temp1[1])
+ lst $temp2,$temp1[2]
+ deblock2 $temp2 $temp1[2]
+fi

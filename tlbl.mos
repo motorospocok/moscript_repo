@@ -1,0 +1,34 @@
+#Simple script to block structure with proxy
+#Same output as moshell command lbl {ldn}
+#Example lbl 44
+
+function block1
+ $execute = readinput(Is ok to block y/n ? )
+ if $execute ~ y || $execute ~ Y
+  lbl $1
+  lst $1
+ fi
+endfunc
+
+
+function block2
+ $execute = readinput(Is ok to block y/n ? )
+ if $execute ~ y || $execute ~ Y
+  lbl $1,$2
+  lst $1,$2
+ fi
+endfunc
+
+
+if $1 !~ ,
+ $temp1 = ldn($1)
+ lst $temp1
+ block1 $temp1
+else
+ $split_separator = ,
+ $temp1 = split($1)
+ pv $temp1
+ $temp2 = ldn($temp1[1])
+ lst $temp2,$temp1[2]
+ block2 $temp2 $temp1[2]
+fi
