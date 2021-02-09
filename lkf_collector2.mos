@@ -1,0 +1,16 @@
+#This scripts finds out the feature names belongs to CXP number
+#Usage : run lkf_collector2.mos <CXP_list_file>
+#The CXP_list_file is a simple file with CXP numbers
+#The collected features stored in <Sitename_report.log> file
+
+lt all
+get 0 ^managedElementId > $sitename
+$lineContent = readfile($1)
+l+ $sitename_invl.log
+for $lineNumber = 1 to $nr_of_lines
+ 
+ invl $lineContent[$lineNumber]
+ 
+done
+l-
+!cat $sitename_invl.log | grep CXC|grep FA >> $sitename_report.log
