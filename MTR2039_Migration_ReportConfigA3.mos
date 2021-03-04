@@ -39,6 +39,7 @@ for $mo in NR_cell_group
 	fi
 	set $mo intraFreqMCCellProfileRef GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$profile_name
 done
+confb
 $ask = readinput(do you want complete switch intraFreqMCCellProfileUsage ? ) 
 if $ask ~ y
 	set GNBCUCPFunction=1,IntraFreqMC=1 intraFreqMCCellProfileUsage 1
@@ -46,4 +47,4 @@ else
 	set GNBCUCPFunction=1,IntraFreqMC=1 intraFreqMCCellProfileUsage 0
 fi
 gs
-confb
+
