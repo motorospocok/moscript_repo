@@ -25,6 +25,7 @@ for $mo in NR_cell_group
 
 	set $mo ueMCCellProfileRef GNBCUCPFunction=1,UeMc=1,UeMCCellProfile=$profile_name
 done
+confb
 $ask = readinput(do you want complete switch ueMCCellProfileEnabled  ? ) 
 if $ask ~ y
 	set GNBCUCPFunction=1,UeMc=1 ueMCCellProfileEnabled true
@@ -32,4 +33,3 @@ else
 	set GNBCUCPFunction=1,UeMc=1 ueMCCellProfileEnabled false
 fi
 gs
-confb
