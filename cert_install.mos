@@ -1,0 +1,48 @@
+#This script installs trusted certificates from uri, supports GEO ENM activites for Magyar Telekom
+
+function certificate_install
+
+#setting up HTTPS sources
+
+ $cert1 = http://10.244.92.3:8093/pki-ra-tdps/ca_entity/ENM_PKI_Root_CA/1ea9680fef71adb4/active/ENM_PKI_Root_CA NULL NULL
+ $cert2 = http://10.244.92.3:8093/pki-ra-tdps/ca_entity/ENM_Infrastructure_CA/701adf2d8972e610/active/ENM_PKI_Root_CA NULL NULL
+ $cert3 = http://10.244.92.3:8093/pki-ra-tdps/ca_entity/ENM_OAM_CA/7244bf713fa232e8/active/ENM_Infrastructure_CA NULL NULL
+
+ #Obtain usedd IP OAM ipinterface 
+ get SystemFunctions=1,SysM=1,OamAccessPoint=1 accessPoint$ > $tpoint
+
+ accn SecM=1,CertM=1 installTrustedCertFromUri $cert1 $tpoint GEO1
+ accn SecM=1,CertM=1 installTrustedCertFromUri $cert2 $tpoint GEO2
+ accn SecM=1,CertM=1 installTrustedCertFromUri $cert3 $tpoint GEO3
+
+ #Reload MO structure
+ lt root
+ lt all
+ unset $temp1
+ unset $temp2
+
+ #Creating cert list for TrustCategeroy OAM
+ ma cert_list SecM=1,CertM=1,TrustedCertificate=
+ for $mo in cert_list
+ 	 $temp1 = ldn($mo)
+ 	 if $temp2 !~ Trusted
+	  $temp2 = $temp1
+	 else
+	  $temp2 = $temp1 $temp2
+	 fi
+ done
+ set SystemFunctions=1,SecM=1,CertM=1,TrustCategory= trustedCertificates $temp2
+ set SecM=1,CertM=1,TrustedCertificate=GEO managedState 0
+ confb
+endfunc
+
+#Main program starts below
+#Check node type
+lt all
+confb
+pr FieldReplaceableUnit
+if $nr_of_mos > 0
+	#If radionode then execute certificate action
+	certificate_install
+fi
+confb

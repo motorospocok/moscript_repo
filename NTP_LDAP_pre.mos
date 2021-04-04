@@ -1,0 +1,80 @@
+#This scripts add the NTP server address for ENM switchover for CPP and RadioNodes
+#Also set the ldap fallback ip on RADIO node
+
+$new_NTP1_address = 10.244.92.29
+$new_NTP2_address = 10.244.92.8
+$ldap_fallback = 10.244.92.22
+
+function set_ldap_fallback
+ gs
+ set . fallbackLdapIpAddress $ldap_fallback
+ gs
+endfunc
+ 
+function add_NTP_radio_node
+ ma installed_NTP ntpserver serveraddress 10.244.92.29
+ pr installed_NTP
+ if $nr_of_mos = 0
+ 
+   pr SystemFunctions=1,SysM=1,TimeM=1,Ntp=1,NtpServer=
+   $new_ntp = $nr_of_mos + 1
+
+   gs+
+   crn SystemFunctions=1,SysM=1,TimeM=1,Ntp=1,NtpServer=$new_ntp
+   administrativeState 1
+   ntpSecurityPolicy
+   serverAddress $new_NTP1_address
+   userLabel GEO_RED1
+   end
+
+   $new_ntp = $new_ntp + 1
+
+   crn SystemFunctions=1,SysM=1,TimeM=1,Ntp=1,NtpServer=$new_ntp
+   administrativeState 1
+   ntpSecurityPolicy
+   serverAddress $new_NTP2_address
+   userLabel GEO_RED2
+   end
+   gs
+ fi
+ 
+endfunc
+
+function add_NTP_CPP_node
+ ma NTP_installed ntpserver serverAddress 10.244.92.29
+ pr NTP_installed
+ if $nr_of_mos = 0
+   lpr SystemFunctions=1,TimeSetting=1,NtpServer=
+   $new_ntp = $nr_of_mos + 1
+   gs+
+   crn SystemFunctions=1,TimeSetting=1,NtpServer=$new_ntp
+   serverAddress $new_NTP1_address
+   serviceActive true
+   userLabel GEO_RED1
+   end
+ 
+   $new_ntp = $new_ntp + 1
+
+   crn SystemFunctions=1,TimeSetting=1,NtpServer=$new_ntp
+   serverAddress $new_NTP2_address
+   serviceActive true
+   userLabel GEO_RED2
+   end
+   gs
+ fi
+endfunc
+
+
+#Main program starts below
+#Check node type
+lt all
+confb
+pr FieldReplaceableUnit
+if $nr_of_mos > 0
+	#If radionode then execute routins below
+	add_NTP_radio_node
+	#set_ldap_fallback
+else
+	add_NTP_CPP_node	
+fi
+confb
