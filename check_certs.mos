@@ -1,0 +1,9 @@
+lt all
+get 0 ^managedElementId > $site_name
+ma check_cert CertM=1,TrustedCertificate=GEO
+pr check_cert
+if $nr_of_mos = 3
+ !echo $site_name" has 3 cert installed" >> ~/CERT_OK_sites.txt
+else
+ !echo $site_name" has cert shortage" >> ~/CERT_NOT_OK.sites.txt
+fi

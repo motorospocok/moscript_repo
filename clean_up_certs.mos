@@ -1,0 +1,69 @@
+#Clean up script for Telekom ENM GEO migration
+#This script removes old credentials from old Teleko ENM
+
+function clean_UP
+ 
+ ma cert_list CertM=1,TrustedCertificate=
+ 
+ for $mo in cert_list
+  $temp = ldn($mo)
+  get $mo certificateContent > $content_check
+  if $content_check[subject] ~ MagyarTelekom 
+   mr cert_list $temp
+  fi
+ done
+ 
+ for $mo in cert_list
+ 	 $temp1 = ldn($mo)
+ 	 if $temp2 !~ Trusted
+	  $temp2 = $temp1
+	 else
+	  $temp2 = $temp1 $temp2
+	 fi
+ done
+ 
+ confb
+ set SystemFunctions=1,SecM=1,CertM=1,TrustCategory= trustedCertificates $temp2 
+ ma unused_nodecred CertM=1,NodeCredential= reservedby 0
+ ma unused_certs CertM=1,TrustedCertificate= reservedby 0
+ del unused_nodecred
+ confb
+ 
+ for $mo in unused_certs
+  $cert1 = ldn($mo)
+  accn SecM=1,CertM=1 removeTrustedCert $cert1
+ done
+ 
+endfunc
+
+function check_https_clits
+ 
+ get SystemFunctions=1,SysM=1,HttpM=1,Https=1 nodeCredential > $http_cred
+ if $http_cred ~ NodeCredential
+  ma credential SecM=1,CertM=1,NodeCredential=
+  mr credential $http_cred
+  for $mo in credential
+   $temp = ldn($mo)
+   confb
+   set SystemFunctions=1,SysM=1,HttpM=1,Https=1 nodeCredential $temp
+   confb
+  done
+ fi
+
+ get SystemFunctions=1,SysM=1,CliTls=1 nodeCredential > $cli_cred
+ if $cli_cred ~ NodeCredential
+  ma credential SecM=1,CertM=1,NodeCredential=
+  mr credential $http_cred
+  for $mo in credential
+   $temp = ldn($mo)
+   confb
+   set SystemFunctions=1,SysM=1,CliTls=1 nodeCredential $temp
+   confb
+  done
+ fi
+
+endfunc
+
+lt all
+check_https_clits
+clean_UP

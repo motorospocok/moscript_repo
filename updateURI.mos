@@ -1,0 +1,24 @@
+$new_user = swuser
+$new_ip = 10.244.92.22
+$new_password = Telekom_1234
+lt all
+cvls
+pv $currentUP
+pr SwM=1,UpgradePackage=$currentUP
+if $nr_of_mos = 0
+ $UP_package = $currentUP -s _ -r -
+ pr $UP_package
+else
+ $UP_package = $currentUP
+fi
+
+pr $U
+
+get SwM=1,UpgradePackage=$UP_package uri > $orig_uri
+$split_separator = /
+$data = split($orig_uri)
+$new_uri = sftp://$new_user@$new_ip/$data[4]/$data[5]/$data[6]/$data[7]
+confb
+set SwM=1,UpgradePackage=$UP_package uri $new_uri
+#set SwM=1,UpgradePackage=$UP_package password  cleartext=true,password=$new_password
+confb
