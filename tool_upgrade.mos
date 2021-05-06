@@ -1,0 +1,6 @@
+lt all
+get 0 ^managedElementId$ > $site_name
+$up_pack = `cat ~/1/upgrade_control.txt | grep -i $site_name | awk 'BEGIN {FS=";"}{print $2}'
+confb
+accn swm=1 createUpgradePackage sftp://swupg@10.244.82.40/home/swupg/software/RadioNode/$up_pack SwU1L0_D1!
+confb

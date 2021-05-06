@@ -1,0 +1,7 @@
+lt all
+get 0 ^managedElementId$ > $site_name
+$backup_name = readinput(Please Enter Backup Name )
+cvms $backup_name
+ma export_backup BrmBackupManager=1,BrmBackup= backupname $backup_name
+accn export_backup export sftp://swupg@10.244.82.40/home/swupg/CV/$site_name SwU1L0_D1!
+mr export_backup
