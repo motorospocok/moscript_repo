@@ -1,0 +1,54 @@
+#This script was used the RadioNodes in SSC ENM reintegrated
+#Known bug: certificates beyond number 10  - wrong list generated
+
+lt all
+confb
+set CertM=1,EnrollmentAuthority=1 enrollmentCaFingerprint 6D:8A:46:64:FD:B2:C5:18:2C:AF:32:87:6C:5B:B4:E8:61:C0:66:75
+
+
+ma cred1 NodeCredential=oamNodeCredential nodeCredentialId oam
+get cred1 subjectName > $sub_name
+
+crn SystemFunctions=1,SecM=1,CertM=1,NodeCredential=oamNodeCredentialSSC
+enrollmentAuthority SecM=1,CertM=1,EnrollmentAuthority=1
+enrollmentServerGroup SecM=1,CertM=1,EnrollmentServerGroup=1
+keyInfo 1
+renewalMode 1
+subjectAltName
+subjectName $sub_name
+userLabel
+end
+
+ma old_certs CertM=1,TrustedCertificate=
+accn SystemFunctions=1,SecM=1,CertM=1,NodeCredential=oamNodeCredentialSSC startOnlineEnrollment null
+
+lt all
+ma all_certs CertM=1,TrustedCertificate=
+for $mo in old_certs
+ $temp = ldn($mo)
+ mr all_certs $temp
+done
+
+for $mo in all_certs
+ $temp1 = ldn($mo)
+ if $temp2 !~ Trusted
+  $temp2 = $temp1
+ else
+  $temp2 = $temp1 $temp2
+ fi
+done
+        
+ma oam_cat CertM=1,TrustCategory= trustCategoryId oam
+set oam_cat trustedCertificates $temp2
+
+set SystemFunctions=1,SecM=1,UserManagement=1,LdapAuthenticationMethod=1,Ldap=1 nodeCredential SecM=1,CertM=1,NodeCredential=oamNodeCredentialSSC
+set SystemFunctions=1,SysM=1,NetconfTls=1 nodeCredential SecM=1,CertM=1,NodeCredential=oamNodeCredentialSSC
+set SystemFunctions=1,SysM=1,CliTls=1 nodeCredential SecM=1,CertM=1,NodeCredential=oamNodeCredentialSSC
+set SystemFunctions=1,SysM=1,HttpM=1,Https=1 nodeCredential SecM=1,CertM=1,NodeCredential=oamNodeCredentialSSC
+del cred1
+
+for $mo in old_certs
+  $cert1 = ldn($mo)
+  accn SecM=1,CertM=1 removeTrustedCert $cert1
+done 
+confb

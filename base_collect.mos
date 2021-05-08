@@ -1,0 +1,17 @@
+function data_collect
+ get 0 ^managedElementId > $site_name
+ get 0 dnPrefix > $dn_prefix
+ get CertM=1,NodeCredential= subjectname > $subject_name
+ get SystemFunctions=1,SysM=1,OamAccessPoint=1 accessPoint$ > $oam_router
+ get $oam_router ^address$ > $ip_1
+ $split_separator = /
+ $1ip_address = split($ip_1)
+ $ip_address = $1ip_address[1]
+ !  echo $site_name';'$dn_prefix';'$subject_name';'$ip_address >> ~/base_data.txt
+endfunc
+
+lt all
+pr FieldReplaceableUnit=
+if $nr_of_mos > 0
+ data_collect
+fi
