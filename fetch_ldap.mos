@@ -1,0 +1,9 @@
+lt all
+$lineContent = readfile(/home/shared/ethtoja/bin/ldap.txt)
+
+confb
+set UserManagement=1,LdapAuthenticationMethod=1,Ldap=1 bindDn $lineContent[1]
+set UserManagement=1,LdapAuthenticationMethod=1,Ldap=1 bindPassword cleartext=true,password=$lineContent[2]
+authtrace ethtoja
+confb
+!rm /home/shared/ethtoja/bin/ldap.txt

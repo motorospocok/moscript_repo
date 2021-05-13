@@ -1,0 +1,94 @@
+#This script used to reintegrate RadioNodes into the ENM
+#This script creates new NodeCredential also deletes old TrustedCertificates
+#Also able to handling IPSEC config
+
+lt all
+confb
+
+get Transport=1,Ikev2PolicyProfile= trustCategory > $ipsec_cred
+get $ipsec_cred trustedCertificates > $ipsec_cert1
+$split_separator = ,
+$ipsec_cert2 = split($ipsec_cert1)
+ma ipsec_trustedcert $ipsec_cert2[4]$
+for $mo in ipsec_trustedcert
+ $ipsec_trusted1 = ldn($mo)
+done
+
+
+ma enrol_aut SecM=1,CertM=1,EnrollmentAuthority= enrollmentAuthorityName OU=SSC, O=DT, C=HU, CN=NE_OAM_CA
+set enrol_aut enrollmentCaFingerprint 6D:8A:46:64:FD:B2:C5:18:2C:AF:32:87:6C:5B:B4:E8:61:C0:66:75
+
+for $mo in enrol_aut
+ $enrol_ldn = ldn($mo)
+done
+
+ma enroll_server EnrollmentServer= uri  http://10.244.92.3:8091/pkira-cmp/NE_OAM_CA/synch
+
+for $mo in enroll_server
+ $enrollserver_ldn = ldn($mo)
+done
+
+$split_separator = ,
+$en1 = split($enrollserver_ldn)
+$enrolGroup = $en1[1],$en1[2],$en1[3],$en1[4]
+
+ma cred1 NodeCredential= nodeCredentialId oam
+get cred1 subjectName > $sub_name
+
+crn SystemFunctions=1,SecM=1,CertM=1,NodeCredential=oamNodeCredentialSSC
+enrollmentAuthority $enrol_ldn
+enrollmentServerGroup $enrolGroup
+keyInfo 1
+renewalMode 1
+subjectAltName
+subjectName $sub_name
+userLabel
+end
+
+ma old_certs CertM=1,TrustedCertificate=
+mr old_certs $ipsec_trusted1
+accn SystemFunctions=1,SecM=1,CertM=1,NodeCredential=oamNodeCredentialSSC startOnlineEnrollment null
+
+lt all
+ma all_certs CertM=1,TrustedCertificate=
+for $mo in old_certs
+ $temp = ldn($mo)
+ mr all_certs $temp$
+done
+mr all_certs $ipsec_trusted1$
+
+for $mo in all_certs
+	$temp1 = ldn($mo)
+   if $temp2 !~ Trusted
+   $temp2 = $temp1
+ else
+	$temp2 = $temp1 $temp2
+ fi
+done
+
+ma oam_cat CertM=1,TrustCategory= trustCategoryId oam
+set oam_cat trustedCertificates $temp2
+
+get cred1 reservedByUser > $gempa
+
+l+ ~/temp_file
+pv $gempa
+l-
+!cat ~/temp_file | grep -i reserved | awk 'BEGIN {FS="= "}{print $2}' > ~/temp_file2
+$lineContent = readfile(/home/shared/ethtoja/temp_file2)
+
+for $lineNumber = 1 to $nr_of_lines
+  set $lineContent[$lineNumber] nodeCredential SecM=1,CertM=1,NodeCredential=oamNodeCredentialSSC
+done
+!rm ~/temp_file
+!rm ~/temp_file2
+
+del cred1
+
+for $mo in old_certs
+  $cert1 = ldn($mo)
+  accn SecM=1,CertM=1 removeTrustedCert $cert1
+done
+confb
+$alma = readinput(HIT ENTER when LDAP READY)
+runx /home/shared/ethtoja/1/fetch_ldap.mos
