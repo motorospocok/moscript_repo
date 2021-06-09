@@ -1,0 +1,64 @@
+#This script starts the packet capture on a selected interface
+#Please remember that loopback interface can not be set as capture target
+#Also need to run an SFTP server where the pcap files are stored
+#This program uses the openssl do decoding the exported capture files
+#command openssl enc doing this job.
+#Please edit the init variables section below before usage
+
+#**************** Initial variables************************************
+$test_set = readinput(Please enter test case ID: ) #TEST SET ID, the PCAP file name will be the same e.g COS-1
+$orig_path = /home/shared/ethtoja
+$server_ip = 10.244.92.15
+$suser = ethtoja
+$spsw = Change312!
+$spath = /home/shared/ethtoja
+$windows_path = $orig_path
+$packet_capture_psw = 12345678 #password for captured file
+
+get 0 managedElementId > $site
+#**************** Initial variables end************************************
+
+!echo "**********************************************************" >> $spath/$sitepacket_prog_disp.txt
+!echo "*************** PACKET CAPTURE IN PROGRESS ***************" >> $spath/$sitepacket_prog_disp.txt
+!echo "**********************************************************" >> $spath/$sitepacket_prog_disp.txt
+
+!echo "**********************************************************" >> $spath/$sitepacket_stop_disp.txt
+!echo "*************** PACKET CAPTURE IS STOPPED  ***************" >> $spath/$sitepacket_stop_disp.txt
+!echo "**********************************************************" >> $spath/$sitepacket_stop_disp.txt
+
+
+!echo "**************Please select ipinterface below for packet capture ****************" >> $spath/$sitemenu_temp.txt
+!echo " " >> $spath/$sitemenu_temp.txt
+ma interface_list InterfaceIPv4 loopback false
+$menu_point = 1 
+for $mo in interface_list
+	$menu_item[$menu_point] = ldn($mo)
+	$menu_item[$menu_point] = $menu_item[$menu_point] -s Transport=1,
+	!echo $menu_point" ---------- "$menu_item[$menu_point] >> $spath/$sitemenu_temp.txt
+	$menu_point = $menu_point + 1
+done
+!echo " " >> $spath/$sitemenu_temp.txt
+!echo "****************************************" >> $spath/$sitemenu_temp.txt
+!cat $spath/$sitemenu_temp.txt
+$select = readinput(Please type number of interface to be monitored: )
+
+mcc PacketCapture=1 packet-capture start -i $menu_item[$select] -c 16000
+!cat $spath/$sitepacket_prog_disp.txt
+$select = readinput(Please press Enter to STOP packet catpure! )
+mcc PacketCapture=1 packet-capture stop
+!cat $spath/$sitepacket_stop_disp.txt
+$select = readinput( Wait some seconds before transfer, press ENTER )
+mcc PacketCapture=1 packet-capture export  --uri sftp://$suser@$server_ip$spath --uripassword $spsw --password 12345678
+l+ $spath/$sitepacket_status
+mcc PacketCapture=1 packet-capture status
+l-
+$select = readinput( Check status above and press enter )
+$lineContent = readfile($spath/$sitepacket_status)
+$decode = $lineContent[17] -s filename=
+!cd $windows_path
+!openssl enc -aes-256-ctr -d -in $decode -out $test_set.pcap -pass pass:12345678
+
+!rm $spath/$sitemenu_temp.txt
+!rm $spath/$sitepacket_prog_disp.txt
+!rm $spath/$sitepacket_stop_disp.txt
+!rm $spath/$sitepacket_status
