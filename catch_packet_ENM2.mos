@@ -4,6 +4,7 @@
 #This program uses the openssl do decoding the exported capture files
 #command openssl enc doing this job.
 #Please edit the init variables section below before usage
+#2021 june 9 - fixed log issues
 
 #**************** Initial variables************************************
 $test_set = readinput(Please enter test case ID: ) #TEST SET ID, the PCAP file name will be the same e.g COS-1
