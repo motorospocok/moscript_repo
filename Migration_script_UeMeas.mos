@@ -1,0 +1,59 @@
+uv exclude_deprecated=0
+lt all
+confb
+gs
+
+function create_parrents
+ pr GNBCUCPFunction=1,IntraFreqMC
+ if $nr_of_mos = 0
+  cr  GNBCUCPFunction=1,IntraFreqMC=1
+ fi
+ pr GNBCUCPFunction=1,UeMC=
+ if $nr_of_mos = 0
+  cr GNBCUCPFunction=1,UeMC=1
+ fi
+endfunc
+
+
+function create_ind_profiles
+ ma nrcell_CU GNBCUCPFunction1,NRCellCU=
+ for $mo in nrcell_CU
+  $temp_CU = ldn($mo)
+  get $mo nRCellCUId > $cell_name
+  cr GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$cell_name
+  get $temp_CU,UeMeascontrol=1,ReportConfigA3=1 offset > $t_offset
+  get $temp_CU,UeMeascontrol=1,ReportConfigA3=1 hysteresis > $t_hysteresis
+  get $temp_CU,UeMeascontrol=1,ReportConfigA3=1 timeToTrigger > $t_timeToTrigger
+  get $temp_CU,UeMeascontrol=1,ReportConfigA3=1 endcActionA3EvalFail > $t_endcActionA3EvalFail
+  get $temp_CU,UeMeascontrol=1,ReportConfigA3=1 triggerQuantity > $t_triggerQuantity
+  if $t_triggerQuantity ~ 0
+   $t_triggerQuantity = 0
+  else 
+   $t_triggerQuantity = 1
+  fi
+  set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$cell_name rsrpBetterSpCell offset=$t_offset
+  set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$cell_name rsrpBetterSpCell hysteresis=$t_hysteresis
+  set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$cell_name rsrpBetterSpCell timeToTrigger=$t_timeToTrigger
+  set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$cell_name endcActionEvalFail $t_endcActionA3EvalFail
+  set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$cell_name betterSpCellTriggerQuantity $t_triggerQuantity
+  set $mo intraFreqMCCellProfileRef GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$cell_name
+ 
+  cr GNBCUCPFunction=1,UeMC=1,UeMCCellProfile=$cell_name
+  get $temp_CU,UeMeascontrol=1 filterCoefficientNrRsrp > $t_filterCoefficientNrRsrp
+  get $temp_CU,UeMeascontrol=1 filterCoefficientNrRsrq > $t_filterCoefficientNrRsrq
+  get $temp_CU,UeMeascontrol=1 sMeasure > $t_sMeasure
+  set GNBCUCPFunction=1,UeMC=1,UeMCCellProfile=$cell_name$ filterCoefficientNrRsrpLow $t_filterCoefficientNrRsrp
+  set GNBCUCPFunction=1,UeMC=1,UeMCCellProfile=$cell_name$ filterCoefficientNrRsrqLow $t_filterCoefficientNrRsrq
+  set GNBCUCPFunction=1,UeMC=1,UeMCCellProfile=$cell_name$ sMeasure $t_sMeasure
+  set $mo ueMCCellProfileRef UeMC=1,UeMCCellProfile=$cell_name
+ done
+ set  GNBCUCPFunction=1,IntraFreqMC=1 intraFreqMCCellProfileUsage 1
+ set GNBCUCPFunction=1,UeMC=1 ueMCCellProfileEnabled true
+endfunc
+
+
+
+
+
+
+
