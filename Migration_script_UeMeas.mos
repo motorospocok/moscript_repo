@@ -1,59 +1,104 @@
+# Migration script for 4.2.2.2.2 Deprecation of MO class UeMeasControl 
+# Version 1.0 Based on 21Q2 GA Release note
+# Due to Uservariable setup ( 0 allows to operate with depreciated params )
+# Script must be run after node login, no other mo commands should be ordered 
+
+# Version1.0 features: supports profile creation individually for cells ONLY
+# if any Mo IntraFreqMCCellProfile instance already exist the script does not change
+# anything with the IntraFreqMCCellProfile configuration
+# if any Mo UeMCCellProfile instance already exist the script does not change
+# anything with the UeMCCellProfile configuration
+# MO naming convention based on the nRCellCUId parameter
+# Currently supports only IntrafreqMC=1 and UeMC=1 parrents structure only
+
 uv exclude_deprecated=0
 lt all
 confb
 gs
+
+
+#****************** Function declaration START ************************
 
 function create_parrents
  pr GNBCUCPFunction=1,IntraFreqMC
  if $nr_of_mos = 0
   cr  GNBCUCPFunction=1,IntraFreqMC=1
  fi
+ set  GNBCUCPFunction=1,IntraFreqMC=1 intraFreqMCCellProfileUsage 1
  pr GNBCUCPFunction=1,UeMC=
  if $nr_of_mos = 0
   cr GNBCUCPFunction=1,UeMC=1
  fi
-endfunc
-
-
-function create_ind_profiles
- ma nrcell_CU GNBCUCPFunction1,NRCellCU=
- for $mo in nrcell_CU
-  $temp_CU = ldn($mo)
-  get $mo nRCellCUId > $cell_name
-  cr GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$cell_name
-  get $temp_CU,UeMeascontrol=1,ReportConfigA3=1 offset > $t_offset
-  get $temp_CU,UeMeascontrol=1,ReportConfigA3=1 hysteresis > $t_hysteresis
-  get $temp_CU,UeMeascontrol=1,ReportConfigA3=1 timeToTrigger > $t_timeToTrigger
-  get $temp_CU,UeMeascontrol=1,ReportConfigA3=1 endcActionA3EvalFail > $t_endcActionA3EvalFail
-  get $temp_CU,UeMeascontrol=1,ReportConfigA3=1 triggerQuantity > $t_triggerQuantity
-  if $t_triggerQuantity ~ 0
-   $t_triggerQuantity = 0
-  else 
-   $t_triggerQuantity = 1
-  fi
-  set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$cell_name rsrpBetterSpCell offset=$t_offset
-  set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$cell_name rsrpBetterSpCell hysteresis=$t_hysteresis
-  set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$cell_name rsrpBetterSpCell timeToTrigger=$t_timeToTrigger
-  set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$cell_name endcActionEvalFail $t_endcActionA3EvalFail
-  set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$cell_name betterSpCellTriggerQuantity $t_triggerQuantity
-  set $mo intraFreqMCCellProfileRef GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$cell_name
- 
-  cr GNBCUCPFunction=1,UeMC=1,UeMCCellProfile=$cell_name
-  get $temp_CU,UeMeascontrol=1 filterCoefficientNrRsrp > $t_filterCoefficientNrRsrp
-  get $temp_CU,UeMeascontrol=1 filterCoefficientNrRsrq > $t_filterCoefficientNrRsrq
-  get $temp_CU,UeMeascontrol=1 sMeasure > $t_sMeasure
-  set GNBCUCPFunction=1,UeMC=1,UeMCCellProfile=$cell_name$ filterCoefficientNrRsrpLow $t_filterCoefficientNrRsrp
-  set GNBCUCPFunction=1,UeMC=1,UeMCCellProfile=$cell_name$ filterCoefficientNrRsrqLow $t_filterCoefficientNrRsrq
-  set GNBCUCPFunction=1,UeMC=1,UeMCCellProfile=$cell_name$ sMeasure $t_sMeasure
-  set $mo ueMCCellProfileRef UeMC=1,UeMCCellProfile=$cell_name
- done
- set  GNBCUCPFunction=1,IntraFreqMC=1 intraFreqMCCellProfileUsage 1
  set GNBCUCPFunction=1,UeMC=1 ueMCCellProfileEnabled true
 endfunc
 
+function create_IntraFreqMCCellProfile
+ cr GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$cell_name
+ get $temp_CU,UeMeascontrol=1,ReportConfigA3=1 offset > $t_offset
+ get $temp_CU,UeMeascontrol=1,ReportConfigA3=1 hysteresis > $t_hysteresis
+ get $temp_CU,UeMeascontrol=1,ReportConfigA3=1 timeToTrigger > $t_timeToTrigger
+ get $temp_CU,UeMeascontrol=1,ReportConfigA3=1 endcActionA3EvalFail > $t_endcActionA3EvalFail
+ get $temp_CU,UeMeascontrol=1,ReportConfigA3=1 triggerQuantity > $t_triggerQuantity
+ if $t_triggerQuantity ~ 0
+  $t_triggerQuantity = 0
+ else 
+  $t_triggerQuantity = 1
+ fi
+ if $t_endcActionA3EvalFail ~ 0
+  $t_endcActionA3EvalFail = 0
+ else 
+  $t_endcActionA3EvalFail = 1
+ fi
+ set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$cell_name$ rsrpBetterSpCell offset=$t_offset
+ set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$cell_name$ rsrpBetterSpCell hysteresis=$t_hysteresis
+ set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$cell_name$ rsrpBetterSpCell timeToTrigger=$t_timeToTrigger
+ set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$cell_name$ endcActionEvalFail $t_endcActionA3EvalFail
+ set GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$cell_name$ betterSpCellTriggerQuantity $t_triggerQuantity
+ set $mo intraFreqMCCellProfileRef GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=$cell_name
+endfunc
 
+function create_UeMCCellProfile
+ cr GNBCUCPFunction=1,UeMC=1,UeMCCellProfile=$cell_name
+ get $temp_CU,UeMeascontrol=1 filterCoefficientNrRsrp > $t_filterCoefficientNrRsrp
+ get $temp_CU,UeMeascontrol=1 filterCoefficientNrRsrq > $t_filterCoefficientNrRsrq
+ get $temp_CU,UeMeascontrol=1 sMeasure > $t_sMeasure
+ set GNBCUCPFunction=1,UeMC=1,UeMCCellProfile=$cell_name$ filterCoefficientNrRsrpLow $t_filterCoefficientNrRsrp
+ set GNBCUCPFunction=1,UeMC=1,UeMCCellProfile=$cell_name$ filterCoefficientNrRsrqLow $t_filterCoefficientNrRsrq
+ set GNBCUCPFunction=1,UeMC=1,UeMCCellProfile=$cell_name$ sMeasure $t_sMeasure
+ set $mo ueMCCellProfileRef UeMC=1,UeMCCellProfile=$cell_name
+endfunc 
 
+function create_ind_profiles
+ ma nrcell_CU GNBCUCPFunction=1,NRCellCU=
+ for $mo in nrcell_CU
+  $temp_CU = ldn($mo)
+  get $mo nRCellCUId > $cell_name
+  if $flag_IntraFreqMCCellProfile = 0
+   create_IntraFreqMCCellProfile
+  fi
+  if $flag_UeMCCellProfile = 0
+   create_UeMCCellProfile
+  fi
+ done
+endfunc
 
+#****************** Function declaration END ************************
 
+#Main program starts here
+$flag_IntraFreqMCCellProfile = 1
+$flag_UeMCCellProfile = 1
 
+pr GNBCUCPFunction=1,IntraFreqMC=1,IntraFreqMCCellProfile=
+if $nr_of_mos = 0
+ $flag_IntraFreqMCCellProfile = 0
+fi
+pr GNBCUCPFunction=1,UeMC=1,UeMCCellProfile=
+if $nr_of_mos = 0
+ $flag_UeMCCellProfile = 0
+fi  
+  
+create_parrents
+create_ind_profiles
+confb
+gs
 
