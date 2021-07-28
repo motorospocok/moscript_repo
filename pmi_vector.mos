@@ -1,0 +1,23 @@
+#This script uses to print PMI vectors on active antenna, 5G NSA scenario
+#Warning all BBref is collected, may be not usefull in LIVE site
+
+l+ ~/temp1.log
+rpc/nrat/ue list
+l-
+!cat ~/temp1.log |  grep -i rpcUeId | awk 'BEGIN {FS=" "}{print $2}' | awk 'BEGIN {FS=":"}{print $2}' > ~/temp2.log
+$lineContent = readfile(/home/shared/tothja/temp2.log)
+l+ ~/temp3.log
+for $lineNumber = 1 to $nr_of_lines
+ rpc/nrat/ue show $lineContent[$lineNumber]
+done
+l-
+!cat temp3.log | grep bbUeRef| awk 'BEGIN {FS=" "}{print $11}'|awk 'BEGIN {FS=","}{print $1}' > temp4.log
+$lineContent = readfile(/home/shared/tothja/temp4.log)
+for $lineNumber = 1 to $nr_of_lines
+ mtd @N_R4_0 debug -ta upcUeDlNrCeIfC -fun UPCUEDLNRCE_XBMREACTOR_getUePmiValues($lineContent[$lineNumber]) -dest RTS_WAIT
+done
+
+!rm ~/temp1.log
+!rm ~/temp2.log
+!rm ~/temp3.log
+!rm ~/temp4.log
