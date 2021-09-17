@@ -1,0 +1,54 @@
+# This scrip is written for compare 21Q4 IP5 6630HW activated features with migrated 6631 
+# on MTR track
+# This script uses M_lkf_reference.txt, E_lkf_reference.txt
+# M_sites_LKF_set.txt, E_sites_LKF_set.txt files for operation
+# also upgrade_package_list.txt file is required for sw level display in the report.txt
+# The result is stored in the user homedirectory.
+# Version 1.0 - 17th Sep 2022
+
+lt all
+
+function unsupported_lkf
+ $temp = $1
+ $split_separator = =
+ $temp1 = split($temp)
+ unset $split_separator
+ $temp2 = split($temp1[4])
+ !cat $path/$lkf_set | grep $temp2[1] >> ~/$sitename_report.log
+endfunc
+
+$path = /home/shared/ethtoja/migration/license_lift
+$date = `date "+%Y-%m-%d %H:%M:%S"`
+ma current_sw upgradepackage ^state$ 7
+get current_sw upgradePackageId > $curr_sw_radio
+$curr_sw_radio =  $curr_sw_radio -s - -r _
+$find_sw = `cat /home/shared/ethtoja/scriptek/upgrade_package_list.txt | grep $curr_sw_radio`
+get 0 ^managedElementId > $sitename
+
+!echo '///////////////////////////////////////////////////////////////////////////////' >> ~/$sitename_report.log
+!echo '// This Following feature are activated originally but not supported currently' >> ~/$sitename_report.log
+!echo '// Site name: $sitename' >> ~/$sitename_report.log
+!echo '// SW level: $find_sw' >> ~/$sitename_report.log
+!echo '// Date: $date' >> ~/$sitename_report.log
+!echo '///////////////////////////////////////////////////////////////////////////////' >> ~/$sitename_report.log
+!echo ' ' >> ~/$sitename_report.log
+
+if $sitename ~ 1M1 ||$sitename ~ 1m1 
+ $command = readfile($path/M_sites_LKF_set.txt)
+ $lkf_set = M_lkf_reference.txt
+else
+ $command = readfile($path/E_sites_LKF_set.txt)
+ $lkf_set = E_lkf_reference.txt
+fi
+pv $lkf_set
+
+for $lineNumber = 1 to $nr_of_lines
+ lset $command[$lineNumber]
+ if $returncode = 1 
+  pv $command[$lineNumber]
+  unsupported_lkf $command[$lineNumber]
+ fi
+done
+
+!echo ' ' >> ~/$sitename_report.log
+!echo '//////////////////////////////////Report-END////////////////////////////////////' >> ~/$sitename_report.log
