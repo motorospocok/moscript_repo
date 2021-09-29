@@ -1,3 +1,7 @@
+#V1.0 by Toja
+#This script produces input for the check_license_support.mos file
+
+lt all
 $path_id = /home/shared/ethtoja/migration/license_lift
 $date = `date "+%Y-%m-%d %H:%M:%S"`
 ma current_sw upgradepackage ^state$ 7
@@ -7,21 +11,24 @@ $find_sw = `cat /home/shared/ethtoja/scriptek/upgrade_package_list.txt | grep $c
 get 0 managedElementId > $site_name
 
 
-!echo '/////////////////////////////////////////////////////////////////////////' >> $path_id/$site_name_license.txt
-!echo '// This license setup file is generated with the following setup:' >> $path_id/$site_name_license.txt
-!echo '// Site name: $site_name' >> $path_id/$site_name_license.txt
-!echo '// SW level: $find_sw' >> $path_id/$site_name_license.txt
-!echo '// Date: $date' >> $path_id/$site_name_license.txt
-!echo '/////////////////////////////////////////////////////////////////////////' >> $path_id/$site_name_license.txt
+!echo '# /////////////////////////////////////////////////////////////////////////' >> $path_id/$site_name_license.txt
+!echo '# // This license setup file is generated with the following setup:' >> $path_id/$site_name_license.txt
+!echo '# // Site name: $site_name' >> $path_id/$site_name_license.txt
+!echo '# // SW level: $find_sw' >> $path_id/$site_name_license.txt
+!echo '# // Date: $date' >> $path_id/$site_name_license.txt
+!echo '# /////////////////////////////////////////////////////////////////////////' >> $path_id/$site_name_license.txt
 !echo ' ' >> $path_id/$site_name_license.txt
-!echo 'gs' >> $path_id/$site_name_license.txt
-!echo 'confb' >> $path_id/$site_name_license.txt
+
 
 ma activated_features Lm=1,FeatureState= featureState$ 1
 for $mo in activated_features
  $feature_name = ldn($mo)
- !echo 'lset '$feature_name' featureState 1' >> $path_id/$site_name_license.txt
+ !echo $feature_name' featureState 1' >> $path_id/$site_name_license.txt
 done
 
-!echo 'gs' >> $path_id/$site_name_license.txt
-!echo 'confb' >> $path_id/$site_name_license.txt
+!echo ' ' >> $path_id/$site_name_license.txt
+!echo '# ////////////////////////License file end////////////////////////////////' >> $path_id/$site_name_license.txt
+
+l+ $path_id/$site_name_inventory.txt
+invl
+l-
