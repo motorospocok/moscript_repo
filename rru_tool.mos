@@ -1,0 +1,170 @@
+#RRU support script by ETH TOJA
+#This script uses the SSC_RU_list.csv file to determine the RU positions
+#You have to edit the two file paths below, if you want other directory structire for usage
+#Version 1.0 - 2021 Nov 3
+
+# Edit these path below if you want different path
+$csv_path = /home/shared/common/data_collections/SSC_RU_list.csv
+$report_path = ~/RRU_report.log
+
+
+# ******************* Function declaration part***************************************
+ 
+function add_ru_to_database
+ $ru_number = readinput(Please enter the physical RU number )
+ $data = '00;'$ru_number';'$find_data[productName]';'$find_data[productNumber]' '$find_data[productRevision]';'$find_data[serialNumber]';'$ru_number'/1;'$ru_number'/2;'
+ !echo $data >> $csv_path
+ query_lte_cell
+endfunc  
+
+function disabled_ru
+ !echo '***********************************************************************' >> $report_path
+ !echo $cell1'-the connected RRU is not working'  >> $report_path
+ !echo 'Bring it up and repeat the query' >> $report_path
+ !echo '***********************************************************************' >> $report_path
+endfunc
+
+function missing_ru_data
+ 
+ $something = readinput(This RU is NOT in the database, do you want to add it to the database? )
+ if $something ~ y
+  add_ru_to_database
+ else 
+  !echo '***********************************************************************' >> $report_path
+  !echo $cell1' connected RU is not in the database' >> $report_path
+  !echo '***********************************************************************' >> $report_path
+ fi
+endfunc
+
+function search_ru
+ get $rru[1] productData > $find_data
+ $result = `cat $csv_path | grep -i $find_data[serialNumber]`
+ if $result ~ [1..9]
+   $split_separator = ;
+   $result1 = split($result)
+   !echo '***********************************************************************' >> $report_path
+   !echo 'Site name: '$site_name >> $report_path
+   !echo $cell1' is currently connected to '$result1[6]' '$result1[7] >> $report_path
+   !echo 'Radio product: '$find_data[productName] >> $report_path
+   !echo 'Radio type: '$find_data[productNumber] >> $report_path
+   !echo 'Radio revision: '$find_data[productRevision] >> $report_path
+   !echo '***********************************************************************' >> $report_path
+  else
+   missing_ru_data
+ fi
+endfunc
+
+
+function query_lte_cell
+ unset $result
+ get $cell sectorCarrierRef > $carrier_ref
+ $split_separator = =
+ $sec2 = split($carrier_ref)
+ get ENodeBFunction=1,SectorCarrier=$sec2[5] sectorFunctionRef > $sector
+ sector_ref
+endfunc
+
+function query_NR_cell
+ unset $result
+ get $cell sectorCarrierRef > $carrier_ref
+ $split_separator = =
+ $sec2 = split($carrier_ref)
+ get GNBDUFunction=1,NRSectorCarrier=$sec2[5] sectorEquipmentFunctionRef > $sector
+ sector_ref
+endfunc
+
+function query_GSM_cell
+ unset $result
+ get $cell rfBranchTx$ > $rf_branch
+ $split_separator = ,
+ $rf = split($rf_branch) 
+ $temp1 = $rf[2],$rf[3]
+ $split_separator = >>>
+ $temp2 = split($temp1)
+ get $temp2[1] rfportref > $rf_port
+ $split_separator = ,
+ $rru = split($rf_port)  
+ get $rru[1] operationalState > $op
+ if $op ~ ENABLED
+  search_ru 
+ fi
+ if $op ~ DISABLED
+  disabled_ru
+ fi
+endfunc
+
+function query_WCDMA_cell
+ get $cell1,NodeBSectorCarrier= rfBranchTxRef > $rf_branch
+ $split_separator = ,
+ $rf = split($rf_branch) 
+ $temp1 = $rf[2],$rf[3]
+ $split_separator = >>>
+ $temp2 = split($temp1)
+ get $temp2[1] rfportref > $rf_port
+ $split_separator = ,
+ $rru = split($rf_port)  
+ get $rru[1] operationalState > $op
+ if $op ~ ENABLED
+  search_ru 
+ fi
+ if $op ~ DISABLED
+  disabled_ru
+ fi
+endfunc
+
+function sector_ref
+ get $sector rfBranchRef > $rf_branch
+ $split_separator = ,
+ $rf = split($rf_branch)
+ $temp1 = $rf[2],$rf[3]
+ $split_separator = >>>
+ $temp2 = split($temp1)
+ get $temp2[1] rfportref > $rf_port
+ $split_separator = ,
+ $rru = split($rf_port)  
+ get $rru[1] operationalState > $op
+ if $op ~ ENABLED
+  search_ru 
+ fi
+ if $op ~ DISABLED
+  disabled_ru
+ fi
+endfunc
+
+# ******************* Function declaration part END************************************
+
+lt all
+get 0 managedElementId > $site_name
+ 
+for ever
+ st EUtranCellFDD=
+ st NrCellDu=
+ st ^NodeBLocalCell=
+ st GsmSector=.*,Trx=
+ $cell = readinput(Enter cell name proxy )
+ $cell1 = rdn($cell)
+ if $cell1 ~ EUtranCellFDD
+  query_lte_cell
+ fi
+ if $cell1 ~ NRCellDU
+  query_NR_cell
+ fi
+ if $cell1 ~ NodeBLocalCell
+  query_WCDMA_cell
+ fi
+ if $cell1 ~ Trx
+  $cell1 = ldn($cell)
+  query_GSM_cell
+ fi
+ !cat $report_path
+ $repeat = readinput(Another query? )
+ if $repeat !~ y
+  break
+ fi
+done
+
+!cat $report_path
+$repeat = readinput(Delete Report file? )
+if $repeat ~ y
+ !rm  $report_path
+fi
