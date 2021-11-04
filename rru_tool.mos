@@ -2,6 +2,7 @@
 #This script uses the SSC_RU_list.csv file to determine the RU positions
 #You have to edit the two file paths below, if you want other directory structire for usage
 #Version 1.0 - 2021 Nov 3
+#Version 1.01 - 2021 Nov 4 - Modified WCDMA query
 
 # Edit these path below if you want different path
 $csv_path = /home/shared/common/data_collections/SSC_RU_list.csv
@@ -94,22 +95,8 @@ function query_GSM_cell
 endfunc
 
 function query_WCDMA_cell
- get $cell1,NodeBSectorCarrier= rfBranchTxRef > $rf_branch
- $split_separator = ,
- $rf = split($rf_branch) 
- $temp1 = $rf[2],$rf[3]
- $split_separator = >>>
- $temp2 = split($temp1)
- get $temp2[1] rfportref > $rf_port
- $split_separator = ,
- $rru = split($rf_port)  
- get $rru[1] operationalState > $op
- if $op ~ ENABLED
-  search_ru 
- fi
- if $op ~ DISABLED
-  disabled_ru
- fi
+ get $cell1,NodeBSectorCarrier= sectorEquipmentFunctionRef > $sector
+ sector_ref
 endfunc
 
 function sector_ref
