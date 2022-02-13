@@ -1,0 +1,36 @@
+#Simple moscrip for no of used antenna for LTE and 5G NR cells
+#Version 1.0 2022 Feb 13
+#Version 1.0 currently only LTE supported :)
+
+lt all
+
+function collect_lte_ant
+ get $1 sectorCarrierRef > $temp
+ $change_flag = 0
+ $temp2 = split($temp)
+ get $temp2[6] noOfRxAntennas|noOfTxAntennas
+ $choice = readinput(Change value ? )
+ if $choice ~ y
+  $change_flag = 1
+ fi
+ if $change_flag = 1
+  conf
+  gs
+  bl $1
+  $xant = readinput( Please enter new antenna numbers )
+  set $temp2[6] noOfRxAntennas $xant
+  set $temp2[6] noOfTxAntennas $xant
+  get $temp2[6] noOfRxAntennas|noOfTxAntennas
+  deb $1
+  st $1
+ fi
+ 
+endfunc
+ 
+st cell
+$cell_select = readinput(Please enter proxy number )
+$c1 = ldn($cell_select)
+
+if $c1 ~ EUtranCellFDD
+ collect_lte_ant $cell_select
+fi
