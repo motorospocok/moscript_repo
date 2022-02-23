@@ -1,16 +1,21 @@
-#Verson 1.0 - first release
-#this script generates crn files for other node
-#run the script in a 5G node and the following scripts are created
-#ExternalGNBCUCPFunction for other node
-#ExternalNrCellCu for other node
-#NR freq of the given cell
-#What do you want to create - cell - freq - node - if you type e.g nfc -> script creates everything, 
-#fn -> freq and node will be created
-#you can type anything - just contains c or f or n 
+# Verson 1.0 - first release
+# Verson 1.01 - Minor changes in script name generation
+# this script generates crn files for other node
+# run the script in a 5G node and the following scripts are created
+# - ExternalGNBCUCPFunction for other node
+# - ExternalNrCellCu for other node
+# - NR freq of the given cell
+# What do you want to create - cell - freq - node - if you type e.g nfc -> script creates everything, 
+# fn -> freq and node will be created
+# you can type anything - just contains c or f or n 
 
+#setup this variable below - where the scripts generated
+$path_setup = /home/shared/ethtoja/generated_data
+
+$date = `date "+%Y-%m-%d %H:%M:%S"`
 
 lt all
-$path_setup = /home/shared/ethtoja
+
 get 0 ^managedElementId$ > $site_name
 
 function collect_data
@@ -37,37 +42,43 @@ function collect_data
 endfunc
  
 function create_nr_freq
- !echo 'crn GNBCUCPFunction=1,NRNetwork=1,NRFrequency='$name >> $path_setup/$site_name_NR_FREQ_$cell_name.mos
- !echo 'arfcnValueNRDl '$ssb_freq >> $path_setup/$site_name_NR_FREQ_$cell_name.mos
- !echo 'bandListManual' >> $path_setup/$site_name_NR_FREQ_$cell_name.mos
- !echo 'smtcDuration '$ssb_duration >> $path_setup/$site_name_NR_FREQ_$cell_name.mos
- !echo 'smtcOffset '$ssb_offset >> $path_setup/$site_name_NR_FREQ_$cell_name.mos
- !echo 'smtcPeriodicity '$ssb_period >> $path_setup/$site_name_NR_FREQ_$cell_name.mos
- !echo 'smtcScs '$ssb_subcarspace >> $path_setup/$site_name_NR_FREQ_$cell_name.mos
- !echo 'end' >> $path_setup/$site_name_NR_FREQ_$cell_name.mos
+ !echo '# This NR freq definition generated from site '$site_name' generated on '$date  >> $path_setup/02_$site_name_NR_FREQ_$cell_name.mos
+ !echo ' ' >> $path_setup/02_$site_name_NR_FREQ_$cell_name.mos
+ !echo 'crn GNBCUCPFunction=1,NRNetwork=1,NRFrequency='$name >> $path_setup/02_$site_name_NR_FREQ_$cell_name.mos
+ !echo 'arfcnValueNRDl '$ssb_freq >> $path_setup/02_$site_name_NR_FREQ_$cell_name.mos
+ !echo 'bandListManual' >> $path_setup/02_$site_name_NR_FREQ_$cell_name.mos
+ !echo 'smtcDuration '$ssb_duration >> $path_setup/02_$site_name_NR_FREQ_$cell_name.mos
+ !echo 'smtcOffset '$ssb_offset >> $path_setup/02_$site_name_NR_FREQ_$cell_name.mos
+ !echo 'smtcPeriodicity '$ssb_period >> $path_setup/02_$site_name_NR_FREQ_$cell_name.mos
+ !echo 'smtcScs '$ssb_subcarspace >> $path_setup/02_$site_name_NR_FREQ_$cell_name.mos
+ !echo 'end' >> $path_setup/02_$site_name_NR_FREQ_$cell_name.mos
 endfunc
 
 function generate_ext_gnb
- !echo 'crn GNBCUCPFunction=1,NRNetwork=1,ExternalGNBCUCPFunction='$site_name >> $path_setup/$site_name_ext_GNBD_node.mos
- !echo 'amfRegionInfoList' >> $path_setup/$site_name_ext_GNBD_node.mos
- !echo 'gNBId '$gnode_ID >> $path_setup/$site_name_ext_GNBD_node.mos
- !echo 'gNBIdLength 22' >> $path_setup/$site_name_ext_GNBD_node.mos
- !echo 'isRemoveAllowed false' >> $path_setup/$site_name_ext_GNBD_node.mos
- !echo 'pLMNId mcc='$plmn_data[mcc]',mnc='$plmn_data[mnc] >> $path_setup/$site_name_ext_GNBD_node.mos
- !echo 'end' >> $path_setup/$site_name_ext_GNBD_node.mos
+ !echo '# This external GnodeB definition generated from site '$site_name' generated on '$date >> $path_setup/01_$site_name_ext_GNBD_node.mos
+ !echo ' '>> $path_setup/01_$site_name_ext_GNBD_node.mos
+ !echo 'crn GNBCUCPFunction=1,NRNetwork=1,ExternalGNBCUCPFunction='$site_name >> $path_setup/01_$site_name_ext_GNBD_node.mos
+ !echo 'amfRegionInfoList' >> $path_setup/01_$site_name_ext_GNBD_node.mos
+ !echo 'gNBId '$gnode_ID >> $path_setup/01_$site_name_ext_GNBD_node.mos
+ !echo 'gNBIdLength 22' >> $path_setup/01_$site_name_ext_GNBD_node.mos
+ !echo 'isRemoveAllowed false' >> $path_setup/01_$site_name_ext_GNBD_node.mos
+ !echo 'pLMNId mcc='$plmn_data[mcc]',mnc='$plmn_data[mnc] >> $path_setup/01_$site_name_ext_GNBD_node.mos
+ !echo 'end' >> $path_setup/01_$site_name_ext_GNBD_node.mos
 endfunc
 
 function generate_ext_gnodeB_cell
- !echo 'crn GNBCUCPFunction=1,NRNetwork=1,ExternalGNBCUCPFunction='$site_name',ExternalNRCellCU='$cell_name >> $path_setup/$site_name_ext_gnodeb_cell_$cell_name.mos
- !echo  'absFrameStartOffset' >> $path_setup/$site_name_ext_gnodeb_cell_$cell_name.mos
- !echo 'cellLocalId '$cell_localId >> $path_setup/$site_name_ext_gnodeb_cell_$cell_name.mos
- !echo 'nCI' >> $path_setup/$site_name_ext_gnodeb_cell_$cell_name.mos
- !echo 'nRFrequencyRef NRNetwork=1,NRFrequency='$name >> $path_setup/$site_name_ext_gnodeb_cell_$cell_name.mos
- !echo 'nRPCI '$nr_pci >> $path_setup/$site_name_ext_gnodeb_cell_$cell_name.mos
- !echo 'nRTAC '$nr_tac >> $path_setup/$site_name_ext_gnodeb_cell_$cell_name.mos
- !echo 'plmnIdList mcc='$plmn_data[mcc]',mnc='$plmn_data[mnc] >> $path_setup/$site_name_ext_gnodeb_cell_$cell_name.mos
- !echo 'sNSSAIList' >> $path_setup/$site_name_ext_gnodeb_cell_$cell_name.mos
- !echo 'end' >> $path_setup/$site_name_ext_gnodeb_cell_$cell_name.mos
+ !echo '# This ExternalNRCellCU definition is generated  from site '$site_name' generated on '$date'  >> $path_setup/03_$site_name_ext_gnodeb_cell_$cell_name.mos
+ !echo ' ' >> $path_setup/03_$site_name_ext_gnodeb_cell_$cell_name.mos
+ !echo 'crn GNBCUCPFunction=1,NRNetwork=1,ExternalGNBCUCPFunction='$site_name',ExternalNRCellCU='$cell_name >> $path_setup/03_$site_name_ext_gnodeb_cell_$cell_name.mos
+ !echo  'absFrameStartOffset' >> $path_setup/03_$site_name_ext_gnodeb_cell_$cell_name.mos
+ !echo 'cellLocalId '$cell_localId >> $path_setup/03_$site_name_ext_gnodeb_cell_$cell_name.mos
+ !echo 'nCI' >> $path_setup/03_$site_name_ext_gnodeb_cell_$cell_name.mos
+ !echo 'nRFrequencyRef NRNetwork=1,NRFrequency='$name >> $path_setup/03_$site_name_ext_gnodeb_cell_$cell_name.mos
+ !echo 'nRPCI '$nr_pci >> $path_setup/03_$site_name_ext_gnodeb_cell_$cell_name.mos
+ !echo 'nRTAC '$nr_tac >> $path_setup/03_$site_name_ext_gnodeb_cell_$cell_name.mos
+ !echo 'plmnIdList mcc='$plmn_data[mcc]',mnc='$plmn_data[mnc] >> $path_setup/03_$site_name_ext_gnodeb_cell_$cell_name.mos
+ !echo 'sNSSAIList' >> $path_setup/03_$site_name_ext_gnodeb_cell_$cell_name.mos
+ !echo 'end' >> $path_setup/03_$site_name_ext_gnodeb_cell_$cell_name.mos
 endfunc
 
 collect_data
