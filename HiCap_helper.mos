@@ -1,0 +1,29 @@
+#Hicap Helper
+#Version 0.1 - just listing status for mtd and filter traces
+
+
+$path = /home/shared/ethtoja
+
+
+function chk_status
+ mtd $1 status
+ $alma = readinput(  HIT enter To Continue )
+ bbte $1 log status -p
+ $alma = readinput(  HIT enter To Continue )
+endfunc
+
+get 0 ^managedElementId > $site_name
+l+ $path/$site_name_temp.log
+bbps
+l-
+!cat ~/$site_name_temp.log | grep -i instance | awk 'BEGIN {FS=" "}{print $6}' > $path/$site_name_temp_domain.log
+$domain = readfile($path/$site_name_temp_domain.log)
+for $i = 1 to $nr_of_lines
+ $domain[$i] = @$domain[$i]
+ chk_status $domain[$i]
+done
+
+!rm $path/$site_name_temp.log
+!rm $path/$site_name_temp_domain.log
+
+
