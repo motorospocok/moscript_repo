@@ -1,0 +1,191 @@
+#Short script to helps setup A1,A2,A3,A5 events
+#V1.0 4th March 2022 - First release
+
+lt all
+ 
+function setup_A1
+ get $cell_2,UeMeasControl=1,ReportConfigA1Prim=1 a1ThresholdRsrpPrim|hysteresisA1Prim
+ $new_a1ThresholdRsrpPrim = readinput( Enter new a1ThresholdRsrpPrim )
+ $new_hysteresisA1Prim = readinput( Enter new hysteresisA1Prim )
+ confb
+ gs
+ set $cell_2,UeMeasControl=1,ReportConfigA1Prim=1 a1ThresholdRsrpPrim $new_a1ThresholdRsrpPrim
+ set $cell_2,UeMeasControl=1,ReportConfigA1Prim=1 hysteresisA1Prim $new_hysteresisA1Prim
+ confb
+ gs
+ A1_check
+ !cat ~/report.txt
+ $temp = readinput( Hit Enter to continue )
+ !rm ~/report.txt
+endfunc
+
+function setup_A2
+ get $cell_2,UeMeasControl=1,ReportConfigEUtraBadCovPrim=1 a2ThresholdRsrpPrim|hysteresisA2Prim
+ $new_a2ThresholdRsrpPrim = readinput( Enter new a2ThresholdRsrpPrim )
+ $new_hysteresisA2Prim = readinput( Enter new hysteresisA1Prim )
+ gs
+ confb
+ set $cell_2,UeMeasControl=1,ReportConfigEUtraBadCovPrim=1 a2ThresholdRsrpPrim $new_a2ThresholdRsrpPrim
+ set $cell_2,UeMeasControl=1,ReportConfigEUtraBadCovPrim=1 hysteresisA2Prim $new_hysteresisA2Prim
+ gs
+ confb
+ A2_check
+ !cat ~/report.txt
+ $temp = readinput( Hit Enter to continue )
+ !rm ~/report.txt
+endfunc
+
+function setup_A3
+ get $cell_2,UeMeasControl=1,ReportConfigEUtraBestCell=1 a3offset|hysteresisA3
+ $new_a3offset = readinput( Enter new a3offset )
+ $new_hysteresisA3 = readinput( Enter new hysteresisA3 )
+ confb
+ gs
+ set $cell_2,UeMeasControl=1,ReportConfigEUtraBestCell=1 a3offset $new_a3offset
+ set $cell_2,UeMeasControl=1,ReportConfigEUtraBestCell=1 hysteresisA3 $new_hysteresisA3
+ confb
+ gs
+ A3_check
+ !cat ~/report.txt
+ $temp = readinput( Hit Enter to continue )
+ !rm ~/report.txt
+endfunc
+
+function setup_A5
+ get $cell_2,UeMeasControl=1,ReportConfigA5=1 a5Threshold1Rsrp|hysteresisA5$|a5Threshold2Rsrp
+ $new_a5Threshold1Rsrp = readinput( Enter new A5 thres for serving cell )
+ $new_a5Threshold2Rsrp = readinput( Enter new A5 thres for neighbour cell )
+ $new_hysteresisA5 = readinput( Enter A5 hysteresis )
+ 
+ gs
+ confb
+ set $cell_2,UeMeasControl=1,ReportConfigA5=1 a5Threshold1Rsrp $new_a5Threshold1Rsrp
+ set $cell_2,UeMeasControl=1,ReportConfigA5=1 hysteresisA5 $new_hysteresisA5
+ set $cell_2,UeMeasControl=1,ReportConfigA5=1 a5Threshold2Rsrp $new_a5Threshold2Rsrp
+ confb
+ gs
+ A5_check
+ !cat ~/report.txt
+ $temp = readinput( Hit Enter to continue )
+ !rm ~/report.txt
+endfunc
+ 
+function A1_check
+ get $cell_2,UeMeasControl=1,ReportConfigA1Prim=1 a1ThresholdRsrpPrim > $A1_thres
+ get $cell_2,UeMeasControl=1,ReportConfigA1Prim=1 hysteresisA1Prim > $A1_hyst
+ $A1_hyst = $A1_hyst / 10
+ $A1_result = $A1_thres + $A1_hyst
+ !echo '************** Event A1 analysis *******************' >> ~/report.txt
+ !echo ' Event A1 for Good coverage, serving Becomes Better than threshold, exit search for Inter, IRAT HO' >> ~/report.txt
+ !echo ' Threshold value: '$A1_thres >> ~/report.txt
+ !echo ' Hysteris:        '$A1_hyst >> ~/report.txt
+ !echo ' Which means that if the cell is better than '$A1_result' dBm than Cell is good coverage cell' >>  ~/report.txt
+ !echo '************** Event A1 analysis END ****************' >> ~/report.txt
+ !echo ' ' >> ~/report.txt
+endfunc
+
+function A2_check
+ get $cell_2,UeMeasControl=1,ReportConfigEUtraBadCovPrim=1 a2ThresholdRsrpPrim > $A2_thres
+ get $cell_2,UeMeasControl=1,ReportConfigEUtraBadCovPrim=1 hysteresisA2Prim > $A2_hyst
+ $A2_hyst = $A2_hyst / 10
+ $A2_result = $A2_thres - $A2_hyst
+ !echo '************** Event A2 analysis *******************' >> ~/report.txt
+ !echo ' Event A2 for detect  Bad coverage, serving Becomes Worse than threshold, trigger to search for Inter, IRAT HO' >> ~/report.txt
+ !echo ' Threshold value: '$A2_thres >> ~/report.txt
+ !echo ' Hysteris:        '$A2_hyst >> ~/report.txt
+ !echo ' Which means that if the cell is worse than '$A2_result' dBm than Cell is Bad coverage cell' >>  ~/report.txt
+ !echo '************** Event A2 analysis END ****************' >> ~/report.txt
+ !echo ' ' >> ~/report.txt
+endfunc
+
+function A3_check
+ get $cell_2,UeMeasControl=1,ReportConfigEUtraBestCell=1 a3offset > $A3_offset
+ get $cell_2,UeMeasControl=1,ReportConfigEUtraBestCell=1 hysteresisA3 > $A3_hyst
+ $A3_hyst = $A3_hyst / 10
+ $A3_offset = $A3_offset / 10
+ $A3_result = $A3_offset + $A3_hyst
+ !echo '************** Event A3 analysis *******************' >> ~/report.txt
+ !echo ' Event A3 used during handover between intra or, less commonly, interfrequency LTE neighbor cell' >> ~/report.txt
+ !echo ' This is a RELATIVE difference between the serving and neighbour cell'  >> ~/report.txt
+ !echo ' Offset value: '$A3_offset >> ~/report.txt
+ !echo ' Hysteris:     '$A3_hyst >> ~/report.txt
+ !echo ' Which means that if the measured neighbour is better with '$A3_result' dB than the serving cell then A3 will be triggered' >> ~/report.txt
+ !echo '************** Event A3 analysis END ***************' >> ~/report.txt
+ !echo ' ' >> ~/report.txt
+endfunc
+
+function A5_check
+ get $cell_2,UeMeasControl=1,ReportConfigA5=1 a5Threshold1Rsrp > $A5_serving
+ get $cell_2,UeMeasControl=1,ReportConfigA5=1 hysteresisA5$ > $A5_hyst
+ get $cell_2,UeMeasControl=1,ReportConfigA5=1 a5Threshold2Rsrp > $A5_neigh
+ $A5_hyst = $A5_hyst / 10
+ $A5_res1 = $A5_serving - $A5_hyst
+ $A5_res2 = $A5_neigh + $A5_hyst
+ if $A5_serving > $A5_neigh
+  $A5_res3 = 'faulty setup, the serving cell threshold is higher than the neighbour.'
+ else
+  $A5_res3 = 'seems good setup.'
+ fi
+ !echo '************** Event A5 analysis *******************' >> ~/report.txt
+ !echo ' Serving Becomes Worse than Threshold 1 and Neighbor Better than Threshold 2. Used primarily for coverage triggered inter-frequency handover' >> ~/report.txt
+ !echo ' Event A5 uses ABSOLUTE values'  >> ~/report.txt
+ !echo ' Serving cell - a5Threshold1Rsrp '$A5_serving >> ~/report.txt
+ !echo ' Neigh. cell  - a5Threshold2Rsrp '$A5_neigh >> ~/report.txt
+ !echo ' Hysteris:                       '$A5_hyst >> ~/report.txt
+ !echo ' Which means that if the serving cell is worse than '$A5_res1' dbm and the serving cell is better than '$A5_res2' dbm then A5 event will be triggered' >> ~/report.txt
+ !echo ' Check result: '$A5_res3 >> ~/report.txt
+ !echo '************** Event A5 analysis END ****************' >> ~/report.txt
+endfunc
+
+function make_menu
+ !echo ' ' >> ~/menu.txt
+ !echo 'Welcome to the jungle, this moscript hopefully helps you to set the A1,A2,A3,A5 events in your node' >> ~/menu.txt
+ !echo ' ' >> ~/menu.txt
+ !echo 'Selected cell: '$cell_2 >> ~/menu.txt
+ !echo ' 1. Check all events setup' >> ~/menu.txt
+ !echo ' 2. Configure A1 event' >> ~/menu.txt
+ !echo ' 3. Configure A2 event' >> ~/menu.txt
+ !echo ' 4. Configure A3 event' >> ~/menu.txt
+ !echo ' 5. Configure A5 event' >> ~/menu.txt
+ !echo ' 6. Exit' >> ~/menu.txt
+endfunc
+ 
+for ever
+ st cell 
+ $cell_1 = readinput( Enter Cell proxy )
+ $cell_2 = rdn($cell_1)
+ make_menu
+ !cat ~/menu.txt
+ $choice = readinput( Please make your choice )
+ if $choice = 1
+  A1_check
+  A2_check
+  A3_check
+  A4_check
+  A5_check
+  !cat ~/report.txt
+  $temp = readinput( Hit Enter to continue )
+  !rm ~/report.txt
+  !rm ~/menu.txt
+ fi
+ if $choice = 2
+  setup_A1
+  !rm ~/menu.txt
+ fi
+ if $choice = 3
+  setup_A2
+  !rm ~/menu.txt
+ fi
+ if $choice = 4
+  setup_A3
+  !rm ~/menu.txt
+ fi
+ if $choice = 5
+  setup_A5
+  !rm ~/menu.txt
+ fi
+ if $choice = 6
+  !rm ~/menu.txt
+  break
+ fi
+done
