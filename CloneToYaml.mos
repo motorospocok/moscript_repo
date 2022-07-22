@@ -1,0 +1,122 @@
+#This script was written for cloning existing configuration to Yaml file
+#V1.0 - Ethtoja
+
+#Variable initialization
+$path1 = ~/CloneToYaml/
+get 0 userLabel > $file1
+
+function obtain_rilinks_from_RGW_to_RU
+ !echo '++radio:' >> v1.txt
+ $template = readfile(template.txt)
+ pv $template
+ ma rilink_group rilink riportref2 data
+  for $mo in rilink_group
+   get $mo riportref1 > $temp1
+   get $mo riportref2 > $temp2
+   $split_separator = ,
+   $temp11 = split($temp1)
+   $temp22 = split($temp2)
+   pv $temp11
+   pv $temp12
+   $split_separator = =
+   $fromFru1 = split($temp11[1])
+   $fromFruPort1 = split($temp11[2])
+   $fruId1 = split($temp22[1])
+   $toPort1 = split($temp22[2])
+   pv $fruId1[2]
+   pv $fromFru1[2]
+   pv $fromFruPort1[2]
+   pv $toPort1[2]
+   pr $fruId1[2],Rfport=
+   $rfports = $nr_of_mosrfPorts
+   pv $rfports
+   !echo '++++- fruId: '$fruId1[2] >> v1.txt
+   !echo '++++++type: "$rfports"' >> v1.txt
+   !echo '++++++riLink:' >> v1.txt
+   !echo '++++++++- fromFru: '$fromFru1[2] >> v1.txt
+   !echo '++++++++++fromFruPort: '$fromFruPort1[2] >> v1.txt
+   !echo '++++++++++toPort: '$toPort1[2] >> v1.txt
+   !echo ''>> v1.txt
+  done
+endfunc
+
+function obtain_sector_equipment
+ !echo '++sectorequipmentfunc:' >> v1.txt
+ ma sec_tor  NodeSupport=1,SectorEquipmentFunction=
+  for $mo in sec_tor
+   get $mo sectorEquipmentFunctionId > $secId
+   get $mo rfbranchref > $temp1
+   $temp1 = $temp1 -s .*=\x20 -g
+   get $temp1 rfPortRef > $temp2 
+   $temp2 = $temp2 -s  FieldReplaceableUnit=   
+   $radioFru1 = $temp2 -s ,Rf.*
+   !echo '++++- id: "$secId"' >> v1.txt
+   !echo '++++++radioFru: '$radioFru1 >> v1.txt
+   done
+   !echo ''>> v1.txt
+endfunc  
+
+function obtain_eutrancell
+ !echo '++cell:'>> v1.txt
+ ma cells  ENodeBFunction=1,EUtranCellFDD=
+ for $mo in cells
+  get $mo eUtranCellFDDId > $id1
+  get $mo earfcndl > $earfcndl1
+  get $mo earfcnul > $earfcnul1
+  get $mo ^tac$ > $tac1
+  get $mo physicalLayerCellIdGroup > $physicalLayerCellIdGroup1
+  get $mo physicalLayerSubCellId > $physicalLayerSubCellId1
+  get $mo dlChannelBandwidth > $dlChannelBandwidth1
+  get $mo ulChannelBandwidth > $ulChannelBandwidth1
+  get $mo sectorCarrierRef > $temp1
+  $carrier_ref = $temp1 -s .*>.*Function=1, -g
+  get ENodeBFunction=1,$carrier_ref configuredMaxTxPower > $configuredMaxTxPower1
+  get ENodeBFunction=1,$carrier_ref sectorFunctionRef > $temp1
+  get ENodeBFunction=1,$carrier_ref essScLocalId > $essScLocalId1
+  get ENodeBFunction=1,$carrier_ref essScPairId > $essScPairId1
+  get $temp1 sectorEquipmentFunctionId > $sectorEquipmentFuncId1
+  get $mo activePlmnList > $activePlmnList1
+  get $mo userLabel > $userlabel1 
+  !echo '++++- id: "$id1"' >> v1.txt
+  !echo '++++++earfcndl: "$earfcndl1"' >> v1.txt
+  !echo '++++++earfcnul: "$earfcnul1"' >> v1.txt
+  !echo '++++++tac: "$tac1"' >> v1.txt
+  get $mo essScLocalId > $essScLocalId1
+  if $essScLocalId1 > 0
+   !echo '++++++essScLocalId: "$essScLocalId1"' >> v1.txt
+   !echo '++++++essScPairId: "$essScPairId1"' >> v1.txt
+  fi 
+  !echo '++++++physicalLayerCellIdGroup: "$physicalLayerCellIdGroup1"' >> v1.txt
+  !echo '++++++physicalLayerSubCellId: "$physicalLayerSubCellId1"' >> v1.txt
+  !echo '++++++dlChannelBandwidth: "$dlChannelBandwidth1"' >> v1.txt
+  !echo '++++++ulChannelBandwidth: "$ulChannelBandwidth1"' >> v1.txt
+  !echo '++++++sectorEquipmentFuncId: "$sectorEquipmentFuncId1"' >> v1.txt
+  !echo '++++++configuredMaxTxPower: "$configuredMaxTxPower1"' >> v1.txt
+  !echo '++++++userLabel: "$userlabel1"' >> v1.txt
+  !echo '++++++mcc: "$activePlmnList1[mcc]"' >> v1.txt
+  !echo '++++++mnc: "$activePlmnList1[mnc]"' >> v1.txt
+ done
+endfunc
+
+function obtain_eutranfreq
+ !echo ''>> v1.txt
+ !echo '++eutranfreq:'>> v1.txt
+ ma eFreq EUtraNetwork=1,EUtranFrequency=
+ for $mo in eFreq
+  get $mo eUtranFrequencyId > $id1
+  get $mo arfcnValueEUtranDl > $arfcnValueEUtranDl1
+  !echo '+++- id: "$id1"' >> v1.txt
+  !echo '+++++arfcnValueEUtranDl: "$arfcnValueEUtranDl1"' >> v1.txt
+ done
+endfunc
+  
+obtain_rilinks_from_RGW_to_RU
+obtain_sector_equipment
+obtain_eutrancell
+obtain_eutranfreq
+obtain_eutranfreqrelation
+
+
+!cat v1.txt|sed 's,+, ,g' > $path1$file1.yaml
+!rm v1.txt
+ 
