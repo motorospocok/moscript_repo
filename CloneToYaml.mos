@@ -1,5 +1,5 @@
 #This script was written for cloning existing configuration to Yaml file
-#V1.0 - Ethtoja
+#V1.0 - Supported cloning function for EnodeB: eutrancell,eutranfreq and relation,gutrancell,gutranfreq,gutrancellrelation
 
 #Variable initialization
 $path1 = ~/CloneToYaml/
@@ -74,10 +74,15 @@ function obtain_eutrancell
   get ENodeBFunction=1,$carrier_ref sectorFunctionRef > $temp1
   get ENodeBFunction=1,$carrier_ref essScLocalId > $essScLocalId1
   get ENodeBFunction=1,$carrier_ref essScPairId > $essScPairId1
-  get $temp1 sectorEquipmentFunctionId > $sectorEquipmentFuncId1
+  get ENodeBFunction=1,$carrier_ref noOfTxAntennas > $noOfTxAntennas1
+  get $temp1 sectorEquipmentFunctionId > $sectorEquipmentFuncId1  
   get $mo activePlmnList > $activePlmnList1
   get $mo userLabel > $userlabel1 
   !echo '++++- id: "$id1"' >> v1.txt
+  if $noOfTxAntennas1 > 2
+   !echo '++++++noOfRxAntennas: "$noOfTxAntennas1"' >> v1.txt
+   !echo '++++++noOfTxAntennas: "$noOfTxAntennas1"' >> v1.txt
+  fi
   !echo '++++++earfcndl: "$earfcndl1"' >> v1.txt
   !echo '++++++earfcnul: "$earfcnul1"' >> v1.txt
   !echo '++++++tac: "$tac1"' >> v1.txt
@@ -109,14 +114,152 @@ function obtain_eutranfreq
   !echo '+++++arfcnValueEUtranDl: "$arfcnValueEUtranDl1"' >> v1.txt
  done
 endfunc
+
+function obtain_eutranfreqrelation1
+ !echo ''>> v1.txt
+ ma freqs EUtraNetwork=.*,EUtranFrequency=
+ mr freqs EUtraNetwork=.*,EUtranFrequency= reservedBy [0]
+ for $mo in freqs
+  get $mo reservedby > $temp1
+  get $mo eUtranFrequencyId > $eUtranFrequencyId1
+  !echo "$temp1" > reservedby.txt
+  !cat reservedby.txt  | tail -n +2 | awk 'BEGIN {FS="= "}{print $2}' > reserved2.txt
+  !rm reservedby.txt
+  obtain_eutranfreqrelation2 $eUtranFrequencyId1
+ done
+endfunc
+
+function obtain_eutranfreqrelation2
+ !echo '++eutranfreqrelation:' >> v1.txt
+ $freqID = $1
+ pv $freqID
+ $relations = readfile(reserved2.txt)
+ pv $relations
+ for $lineNumber = 1 to $nr_of_lines
+  $temp1 = $relations[$lineNumber]
+  $split_separator = ,
+  $temp2 = split($temp1)
+  $split_separator = =
+  $temp3 = split($temp2[2])
+  $temp4 = split($temp2[3])  
+  $cellId1 = $temp3[2]
+  $id1 = $temp4[2]
+  !echo '++++- id: "$id1"' >> v1.txt
+  !echo '++++++cellId: "$cellId1"' >> v1.txt
+  !echo '++++++eUtranFrequencyId: "$freqID"' >> v1.txt
+  !echo '++++++cellReselectionPriority: "7"' >> v1.txt
+  !rm reserved2.txt
+ done
+endfunc
+
+function obtain_gutransignal
+ !echo ''>> v1.txt
+ !echo '++gssf:'>> v1.txt
+ ma gutransig ENodeBFunction=1,GUtraNetwork=.*,GUtranSyncSignalFrequency=
+ mr ENodeBFunction=1,GUtraNetwork=.*,GUtranSyncSignalFrequency= reservedBy [0]
+ for $mo in gutransig
+  get $mo gUtranSyncSignalFrequencyId > $gUtranSyncSignalFrequencyId1
+  get $mo arfcn > $arfcn1
+  get $mo ^band$ > $band1
+  get $mo smtcDuration > $smtcDuration1
+  get $mo smtcOffset > $smtcOffset1
+  get $mo smtcPeriodicity > $smtcPeriodicity1
+  get $mo smtcScs > $smtcScs1  
+  !echo '++++- gUtranSyncSignalFrequencyId: "$gUtranSyncSignalFrequencyId1"' >> v1.txt
+  !echo '++++++arfcn: "$arfcn1"' >> v1.txt
+  !echo '++++++band: "$band1"' >> v1.txt
+  !echo '++++++smtcDuration: "$smtcDuration1"' >> v1.txt
+  !echo '++++++smtcOffset: "$smtcOffset1"' >> v1.txt
+  !echo '++++++smtcPeriodicity: "$smtcPeriodicity1"' >> v1.txt
+  !echo '++++++smtcScs: "$smtcScs1"' >> v1.txt
+ done
+endfunc
+
+function obtain_ExternalGUtranCell
+ !echo ''>> v1.txt
+ !echo '++egutrancell:'>> v1.txt
+ ma gutrancells ENodeBFunction=1,GUtraNetwork=.*,ExternalGNodeBFunction=.*,ExternalGUtranCell=
+ for $mo in gutrancells
+  get $mo externalGUtranCellId > $externalGUtranCellId1
+  get $mo physicalLayerCellIdGroup > $physicalLayerCellIdGroup1
+  get $mo physicalLayerSubCellId > $physicalLayerSubCellId1
+  get $mo localCellId > $localCellId1
+  get $mo gUtranSyncSignalFrequencyRef > $temp1
+  $split_separator = =
+  $temp2 = split($temp1)
+  $gUtranSyncSignalFrequencyId1 = $temp2[3]
+  !echo '++++- externalGUtranCellId: "$externalGUtranCellId1"' >> v1.txt
+  !echo '++++++physicalLayerCellIdGroup: "$physicalLayerCellIdGroup1"' >> v1.txt
+  !echo '++++++physicalLayerSubCellId: "$physicalLayerSubCellId1"' >> v1.txt
+  !echo '++++++localCellId: "$localCellId1"' >> v1.txt
+  !echo '++++++gUtranSyncSignalFrequencyId: "$gUtranSyncSignalFrequencyId1"' >> v1.txt
+ done
+endfunc
+
+function obtain_gutranfreqrel
+ !echo ''>> v1.txt
+ !echo '++cellfreq:'>> v1.txt
+ ma grel ENodeBFunction=1,EUtranCellFDD=.*,GUtranFreqRelation=
+ $Id1 = 0
+ for $mo in grel
+  $Id1 = $Id1 + 1
+  $temp = ldn($mo)
+  $split_separator = ,
+  $temp2 = split($temp)
+  $Eutrancell = $temp2[2]
+  get $Eutrancell eUtranCellFDDId > $cellId1
+  get $mo gUtranFreqRelationId > $cellfreqId1
+  get $mo gUtranSyncSignalFrequencyRef > $temp1
+  $split_separator = ,
+  $temp2 = split($temp1)
+  $gUtranSyncSignalFrequencyId = $temp3
+  !echo '++++- id: "$Id1"' >> v1.txt
+  !echo '++++++cellId: "$cellId1"' >> v1.txt
+  !echo '++++++cellfreqId: "$cellfreqId1"' >> v1.txt
+  !echo '++++++gUtranSyncSignalFrequencyId: "$gUtranSyncSignalFrequencyId1"' >> v1.txt
+ done
+endfunc
+
+function obtain_gutrancellrelation
+ !echo ''>> v1.txt
+ !echo '++cellrelation:'>> v1.txt
+ ma grelcell ENodeBFunction=1,EUtranCellFDD=.*,GUtranFreqRelation=.*,GUtranCellRelation=
+ $Id1 = 0
+ for $mo in grelcell
+  $Id1 = $Id1 + 1
+  get $mo gUtranCellRelationId > $cellrelationId1
+  $temp = ldn($mo)
+  $split_separator = ,
+  $temp2 = split($temp)
+  get $temp2[2] eUtranCellFDDId > $cellId1
+  get $temp2[2],$temp2[3] gUtranFreqRelationId > $cellfreqId1
+  get $mo neighborCellRef > $temp
+  $split_separator = =
+  $temp2 = split($temp)
+  $externalGUtranCellId1 = $temp2[4]
+  get $mo essEnabled > $essEnabled1
+  !echo '++++- id: "$Id1"' >> v1.txt
+  !echo '++++++cellrelationId: "$cellrelationId1"' >> v1.txt
+  !echo '++++++cellfreqId: "$cellfreqId1"' >> v1.txt
+  !echo '++++++externalGUtranCellId: "$externalGUtranCellId1"' >> v1.txt
+  !echo '++++++essEnabled: "$essEnabled1"' >> v1.txt
   
-obtain_rilinks_from_RGW_to_RU
-obtain_sector_equipment
-obtain_eutrancell
-obtain_eutranfreq
-obtain_eutranfreqrelation
+ done
+endfunc
 
-
-!cat v1.txt|sed 's,+, ,g' > $path1$file1.yaml
-!rm v1.txt
- 
+#Main program starts here
+lt all
+pr ^enodebfunction=1
+if $nr_of_mos > 0
+ obtain_rilinks_from_RGW_to_RU
+ obtain_sector_equipment
+ obtain_eutrancell
+ obtain_eutranfreq
+ obtain_eutranfreqrelation1
+ obtain_gutransignal
+ obtain_ExternalGUtranCell
+ obtain_gutranfreqrel
+ obtain_gutrancellrelation
+ !cat v1.txt|sed 's,+, ,g' > $path1$file1.yaml
+ !rm v1.txt
+fi
