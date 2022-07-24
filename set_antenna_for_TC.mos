@@ -1,0 +1,97 @@
+#Antenna setup script by ethtoja
+#Version 1.0
+
+gs
+conf
+
+function print_error_report
+ pv $1
+ $error1 = $1
+ !echo $error1 >> err.txt 
+endfunc
+
+
+function set_sector
+ $already_defined = no
+ get NodeSupport=1,SectorEquipmentFunction=$1 rfBranchRef > $temp
+ $split_separator = =
+ $temp2 = split($temp)
+ if $temp2[1] ~ $2
+  $already_defined = yes
+  $err_text = This_sector_already_has_$2_antenna_setup
+   print_error_report $err_text
+   $error_flag = yes
+ fi
+ $split_separator = ,
+ $temp2 = split($temp)
+ pv $temp2
+ get $temp2[2],RfBranch=A rfportRef > $temp3
+ $rfbranch2 = $temp2[2],RfBranch=
+ $temp2 = split($temp3)
+ 
+ #Checking rfport, if not defined 4, then extend the config below
+ 
+ pr $temp2[1],rFport=
+ if $nr_of_mos < 4
+  cr $temp2[1],rFport=C
+  cr $temp2[1],rFport=D
+  cr $rfbranch2C
+  cr $rfbranch2D
+  cr  Equipment=1,AntennaUnitGroup=$1,AntennaUnit=1,AntennaSubunit=3,AuPort=1
+  cr  Equipment=1,AntennaUnitGroup=$1,AntennaUnit=1,AntennaSubunit=4,AuPort=1
+  deb $temp2[1],rFport=C
+  deb $temp2[1],rFport=D
+ fi
+ 
+ if $already_defined = no
+  #NEED TO CHECK THAT THE TESTCHANNELS ARE USING THE NAMING CONVENTIONS FOR ANTSUBUNIT BELOW
+  set $rfbranch2C auportref Equipment=1,AntennaUnitGroup=$1,AntennaUnit=1,AntennaSubunit=3,AuPort=1
+  set $rfbranch2D auportref Equipment=1,AntennaUnitGroup=$1,AntennaUnit=1,AntennaSubunit=4,AuPort=1
+  set $rfbranch2C rfportref $temp2[1],rFport=C
+  set $rfbranch2D rfportref $temp2[1],rFport=D
+  bl NodeSupport=1,SectorEquipmentFunction=$1
+  set NodeSupport=1,SectorEquipmentFunction=$1 rfBranchRef $rfbranch2A $rfbranch2B $rfbranch2C $rfbranch2D
+  deb $temp2[1],rFport=C
+  deb $temp2[1],rFport=D
+  deb NodeSupport=1,SectorEquipmentFunction=$1
+ fi
+ endfunc
+
+function sector_check
+pv $1
+pv $2
+
+ pr NodeSupport=1,SectorEquipmentFunction=$1
+ if $nr_of_mos = 0
+   $err_text = This_sector_does_not_exist
+   print_error_report $err_text
+   $error_flag = yes
+ else
+  set_sector $1 $2
+ fi
+endfunc
+
+$error_flag = no
+if $1 != sector || cell
+   $err_text = No_valid_parameters_are_given_please_use_sector_or_cell_name
+   print_error_report $err_text
+   $error_flag = yes
+fi
+
+if $1 = sector
+ $sector_num = $2
+ $ant_number = $3
+ sector_check $sector_num $ant_number
+fi
+if $1 = cell
+ $cell_name = $2
+ $ant_number = $3
+ set_cell $cell_name $ant_number
+fi
+
+if $error_flag = yes
+ !cat err.txt
+ !rm err.txt
+fi 
+gs
+confb
