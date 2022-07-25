@@ -1,5 +1,5 @@
 #This script was written for cloning existing configuration to Yaml file
-#V1.0 - Supported cloning function for EnodeB: eutrancell,eutranfreq and relation,gutrancell,gutranfreq,gutrancellrelation
+#V1.0 - Supported cloning function for EnodeB: eutrancell,eutranfreq and relation,gutrancell,gutranfreq,gutrancellrelation,rgw,tls
 
 #Variable initialization
 $path1 = ~/CloneToYaml/
@@ -117,8 +117,9 @@ endfunc
 
 function obtain_eutranfreqrelation1
  !echo ''>> v1.txt
+ !echo '++eutranfreqrelation:' >> v1.txt
  ma freqs EUtraNetwork=.*,EUtranFrequency=
- mr freqs EUtraNetwork=.*,EUtranFrequency= reservedBy [0]
+ mr freqs EUtraNetwork=.*,EUtranFrequency= reservedBy !EUtranFreqRelation
  for $mo in freqs
   get $mo reservedby > $temp1
   get $mo eUtranFrequencyId > $eUtranFrequencyId1
@@ -130,7 +131,7 @@ function obtain_eutranfreqrelation1
 endfunc
 
 function obtain_eutranfreqrelation2
- !echo '++eutranfreqrelation:' >> v1.txt
+ 
  $freqID = $1
  pv $freqID
  $relations = readfile(reserved2.txt)
@@ -210,9 +211,10 @@ function obtain_gutranfreqrel
   get $Eutrancell eUtranCellFDDId > $cellId1
   get $mo gUtranFreqRelationId > $cellfreqId1
   get $mo gUtranSyncSignalFrequencyRef > $temp1
-  $split_separator = ,
+  $split_separator = =
   $temp2 = split($temp1)
-  $gUtranSyncSignalFrequencyId = $temp3
+  pv $temp2
+  $gUtranSyncSignalFrequencyId = $temp2[3]
   !echo '++++- id: "$Id1"' >> v1.txt
   !echo '++++++cellId: "$cellId1"' >> v1.txt
   !echo '++++++cellfreqId: "$cellfreqId1"' >> v1.txt
@@ -243,9 +245,152 @@ function obtain_gutrancellrelation
   !echo '++++++cellfreqId: "$cellfreqId1"' >> v1.txt
   !echo '++++++externalGUtranCellId: "$externalGUtranCellId1"' >> v1.txt
   !echo '++++++essEnabled: "$essEnabled1"' >> v1.txt
-  
  done
 endfunc
+
+function obtain_rgw
+ !echo ''>> v1.txt
+ !echo '++rgw:'>> v1.txt
+ ma RGW_hw Equipment=1,FieldReplaceableUnit=
+ for $mo in RGW_hw
+  get $mo productData > $temp
+  if $temp[productName] !~ Gateway
+   mr RGW_hw $mo 
+  fi
+ done
+ get RGW_hw fieldReplaceableUnitId > $fruId1p
+ for $mo in RGW_hw
+   $hw = ldn($mo)
+ done
+ $riPorts1 = empty
+ ma rgw_riport $hw,riport=
+ for $mo in rgw_riport
+  get $mo riPortId > $riportId1
+  if $riPorts1 = empty
+   $riPorts1 = $riportId1
+  else
+   $riPorts1 = $riPorts1,$riportId1
+  fi
+ done
+ $split_separator = ,
+ $hw1 = split($hw)
+ ma rgw_rlink Equipment=1,RiLink= riPortRef2 $hw1[2],RiPort=
+ pr rgw_rlink
+ get FgwFunction=1,FgwControl=1 ipv6Address > $ipv6IpAddress1
+ get  FgwFunction=1,FgwControl=1 transportRef > $vlan1
+ get $vlan1 vlanId > $c2cVlan1
+ get FgwFunction=1,FgwTermPoint= vlanPortRef > $vlan1
+ get $vlan1 vlanId > $llscuVlan1
+ for $mo in rgw_rlink
+  get $mo riPortRef1 > $temp1
+  get $temp1 riPortId > $fromFruPort1
+  $temp2 = split($temp1)
+  pv $temp2
+  get $temp2[1] fieldReplaceableUnitId > $fromFru1
+  get $mo riPortRef2 > $temp1
+  get $temp1 riPortId > $toPort1
+ done
+ !echo '++++fruId: "$fruId1"' >> v1.txt
+ !echo '++++riPorts: $riPorts1' >> v1.txt
+ !echo '++++ipv6IpAddress: "$ipv6IpAddress1"' >> v1.txt
+ !echo '++++c2cVlan: "$c2cVlan1"' >> v1.txt
+ !echo '++++llscuVlan: "$llscuVlan1"' >> v1.txt
+ !echo '++++tlsName: online' >> v1.txt
+ !echo '++++riLink:' >> v1.txt
+ !echo '++++++- fromFru: "$fromFru1"' >> v1.txt
+ !echo '++++++- fromFruPort: "$fromFruPort1"' >> v1.txt
+ !echo '++++++- toPort: "$toPort1"' >> v1.txt
+endfunc
+
+function obtain_tls
+ !echo ''>> v1.txt
+ !echo '++tls:'>> v1.txt
+ !echo '++++type: online'>> v1.txt
+ !echo '++++name: online'>> v1.txt
+ get SystemFunctions=1,SecM=1,CertM=1,EnrollmentServerGroup=.*,EnrollmentServer= uri > $EnrollmentServerUri1
+ get SystemFunctions=1,SecM=1,CertM=1 reportProgress > $temp1
+ $split_separator = \x20
+ $temp2 = split($temp1[additionalInfo])
+ $installTrustedCertFromUriUri = $temp2[6]
+ get SecM=1,CertM=1,EnrollmentAuthority=.* enrollmentCaFingerprint > $fingerprint1
+ get SecM=1,CertM=1,EnrollmentAuthority=.* enrollmentAuthorityName > $enrollmentAuthorityName1
+ get SystemFunctions=1,SecM=1,CertM=1,NodeCredential= keyInfo > $temp1
+ $temp2 = $temp1 -s ) -g
+ $temp1 = $temp2 -s \( -g
+ $temp2 = split($temp1)
+ $keyInfo1 = $temp2[2]
+ get SecM=1,CertM=1,NodeCredential= subjectName > $subjectName1
+ !echo '++++EnrollmentServerUri: '$EnrollmentServerUri1 >> v1.txt
+ !echo '++++installTrustedCertFromUriUri:' $installTrustedCertFromUriUri >> v1.txt
+ !echo '++++fingerprint:' $fingerprint1 >> v1.txt
+ !echo '++++enrollmentAuthorityName:' $enrollmentAuthorityName1 >> v1.txt
+ !echo '++++keyInfo:' $keyInfo1 >> v1.txt
+ !echo '++++subjectName:' $subjectName1 >> v1.txt
+endfunc
+
+function obtain_fgw_e51_enb_exgnb
+
+ !echo ''>> v1.txt
+ !echo '++fgw:'>> v1.txt
+ get FgwFunction=1,FgwService=1 ipv6Address > $ipv6IpAddress1
+ !echo '++++ipv6IpAddress: "$ipv6IpAddress1"' >> v1.txt 
+ get  FgwFunction=1,FgwService=1 transportRef > $temp1
+ get $temp1 vlanid > $vlanId1
+ get $temp1 encapsulation > $temp2
+ $split_separator = =
+ $temp3 = split($temp2)
+ $port1 = $temp3[2]
+ !echo '++++fgci:' >> v1.txt
+ !echo '++++++vlanId: "$vlanId1"' >> v1.txt
+ !echo '++++++port: "$port1"' >> v1.txt
+ get FgwFunction=1,FgwTermPoint=1 vlanPortRef > $temp1
+ get $temp1 vlanid > $vlanId1
+ !echo '++++llscu:' >> v1.txt
+ !echo '++++++vlanId: "$vlanId1"' >> v1.txt
+ !echo '++++tlsname: online' >> v1.txt
+ !echo ''>> v1.txt
+ get ENodeBFunction=1,GUtraNetwork=1,ExternalGNodeBFunction= eNBVlanPortRef > $temp1
+ get $temp1 vlanid > $vlanId1
+ get $temp1 encapsulation > $temp2
+ $split_separator = =
+ $temp3 = split($temp2)
+ $port1 = $temp3[2]
+ !echo '++e51:' >> v1.txt
+ !echo '++++port: "$port1"' >> v1.txt
+ !echo '++++vlanId: "$vlanId1"' >> v1.txt
+ get ENodeBFunction=1 eNBId > $id1
+ get ENodeBFunction=1 eNodeBPlmnId > $temp1
+ $mcc1 = $temp1[mcc]
+ $mnc1 = $temp1[mnc]
+ !echo ''>> v1.txt
+ !echo '++eNB:' >> v1.txt
+ !echo '++++id: "$id1"' >> v1.txt
+ !echo '++++mcc: "$mcc1"' >> v1.txt
+ !echo '++++mnc: "$mnc1"' >> v1.txt
+ get ENodeBFunction=1,GUtraNetwork=1,ExternalGNodeBFunction= gNodeBId$ > $id1
+ get ENodeBFunction=1,GUtraNetwork=1,ExternalGNodeBFunction= gNodeBPlmnId$ > $temp1
+ $mcc1 = $temp1[mcc]
+ $mnc1 = $temp1[mnc]
+ get ENodeBFunction=1,GUtraNetwork=1,ExternalGNodeBFunction=.*,TermPointToGNB= ipv6Address$ > $cucpAddress1
+ get GNBDUFunction=1,TermPointToGNBCUCP= ipv6Address > $f1c1
+ !echo ''>> v1.txt
+ !echo '++exGNB:' >> v1.txt
+ !echo '++++id: "$id1"' >> v1.txt
+ !echo '++++mcc: "$mcc1"' >> v1.txt
+ !echo '++++mnc: "$mnc1"' >> v1.txt
+ !echo '++++cucpAddress: "$cucpAddress1"' >> v1.txt
+ !echo '++++f1c: "$f1c1"' >> v1.txt
+endfunc
+
+function obtain_boards
+ get NodeSupport=1,MpClusterHandling=1 primaryCoreRef> $field1
+ get $field1 productData > $temp1
+ $split_separator = \x20
+ $temp2 = split($temp1)
+
+
+endfunc
+
 
 #Main program starts here
 lt all
@@ -260,6 +405,11 @@ if $nr_of_mos > 0
  obtain_ExternalGUtranCell
  obtain_gutranfreqrel
  obtain_gutrancellrelation
+ obtain_rgw
+ obtain_tls
+ obtain_fgw_e51_enb_exgnb
+ obtain_boards
+ 
  !cat v1.txt|sed 's,+, ,g' > $path1$file1.yaml
  !rm v1.txt
 fi
