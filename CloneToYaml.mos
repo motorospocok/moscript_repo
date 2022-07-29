@@ -1,6 +1,9 @@
 #This script was written for cloning existing configuration to Yaml file
-#V1.0 - Supported cloning function for EnodeB: eutrancell,eutranfreq and relation,gutrancell,gutranfreq,gutrancellrelation,rgw,tls
+#V1.0 - Supported cloning function for EnodeB: eutrancell,eutranfreq and relation,gutrancell,gutranfreq,gutrancellrelation,rgw,tls,
+# Limitations:
+# - Discovery service hardcoded
 
+s+
 #Variable initialization
 $path1 = ~/CloneToYaml/
 get 0 userLabel > $file1
@@ -10,6 +13,7 @@ function obtain_rilinks_from_RGW_to_RU
  $template = readfile(template.txt)
  pv $template
  ma rilink_group rilink riportref2 data
+ mr rilink_group rilink riportref2 AIR
   for $mo in rilink_group
    get $mo riportref1 > $temp1
    get $mo riportref2 > $temp2
@@ -214,7 +218,7 @@ function obtain_gutranfreqrel
   $split_separator = =
   $temp2 = split($temp1)
   pv $temp2
-  $gUtranSyncSignalFrequencyId = $temp2[3]
+  $gUtranSyncSignalFrequencyId1 = $temp2[3]
   !echo '++++- id: "$Id1"' >> v1.txt
   !echo '++++++cellId: "$cellId1"' >> v1.txt
   !echo '++++++cellfreqId: "$cellfreqId1"' >> v1.txt
@@ -242,6 +246,7 @@ function obtain_gutrancellrelation
   get $mo essEnabled > $essEnabled1
   !echo '++++- id: "$Id1"' >> v1.txt
   !echo '++++++cellrelationId: "$cellrelationId1"' >> v1.txt
+  !echo '++++++cellId: "$cellId1"' >> v1.txt
   !echo '++++++cellfreqId: "$cellfreqId1"' >> v1.txt
   !echo '++++++externalGUtranCellId: "$externalGUtranCellId1"' >> v1.txt
   !echo '++++++essEnabled: "$essEnabled1"' >> v1.txt
@@ -272,6 +277,8 @@ function obtain_rgw
    $riPorts1 = $riPorts1,$riportId1
   fi
  done
+ $test = `echo "$riPorts1" | tr , "\n" | sort | tr "\n" ,`
+ $riPorts1 = `echo "$test" | rev | cut -c 2- | rev`
  $split_separator = ,
  $hw1 = split($hw)
  ma rgw_rlink Equipment=1,RiLink= riPortRef2 $hw1[2],RiPort=
@@ -383,32 +390,115 @@ function obtain_fgw_e51_enb_exgnb
 endfunc
 
 function obtain_boards
- get NodeSupport=1,MpClusterHandling=1 primaryCoreRef> $field1
+ !echo ''>> v1.txt
+ !echo '++boards:'>> v1.txt
+ get NodeSupport=1,MpClusterHandling=1 primaryCoreRef > $field1
  get $field1 productData > $temp1
  $split_separator = \x20
- $temp2 = split($temp1)
+ $temp2 = split($temp1[productName])
+ $name1 = BB$temp2[2]
+ ma riport_group $field1,riport=
+ $riList2 = empty
+ for $mo in riport_group
+  get $mo riPortId > $riId1
+   if  $riList2 = empty
+    $riList2 = $riId1
+   else
+    $riList2 = $riList2,$riId1
+   fi
+ done 
+ $test = `echo "$riList2" | tr , "\n" | sort | tr "\n" ,`
+ $riList1 = `echo "$test" | rev | cut -c 2- | rev`
+ !echo '++++- name: $name1' >> v1.txt
+ !echo '++++++riport: $riList1' >> v1.txt
+ !echo '++++++tnport:' >> v1.txt
+ ma tng Equipment=1,$field1,TnPort=
+ for $mo in tng
+  get $mo tnPortId > $id1  
+  get Transport=1,EthernetPort=$id1 autoNegEnable > $autoNeg1
+  get Transport=1,EthernetPort=$id1 operOperatingMode > $temp2
+  $temp2 = $temp2 -s ) -g
+  $mode1 = $temp2 -s .*\x20\( -g
+  !echo '++++++++- id: $id1' >> v1.txt
+  !echo '++++++++++mode: "$mode1"' >> v1.txt
+  !echo '++++++++++autoNeg: "$autoNeg1"' >> v1.txt
+ done
+ 
+endfunc
 
+function obtain_oam_data
+ get  SystemFunctions=1,SysM=1,OamAccessPoint=1 ^accessPoint$ > $oam_ip_class
+ if $oam_ip_class ~ IPv4
+  $ipStack1 = 4
+ else  
+  $ipStack1 = 6
+ fi
+ get $oam_ip_class
+ $split_separator = ,
+ $oam = split($oam_ip_class)
+ get $oam_ip_class ^address$ > $oam_ip_address
+ $split_separator = /
+ $temp = split($oam_ip_address)
+ $ipAddress1 = $temp[1]
+ $ipAddressMask1 = $temp[2]
+ get $oam[1],.*,nexthop= ^address$ > $defaultRouter01
+ get $oam[1],$oam[2] encapsulation > $vlanport
+ get $vlanport vlanid > $vlan1
+ get $vlanport encapsulation > $temp
+ $split_separator = =
+ $temp1 = split($temp)
+ pv $temp1
+ $port1 = $temp1[2]
+ !echo ''>> v1.txt
+ !echo '++oam:'>> v1.txt
+ !echo '++++IpStack: '$ipStack1 >> v1.txt
+ !echo '++++port: '$port1 >> v1.txt
+ !echo '++++vlan: "$vlan1"' >> v1.txt
+ !echo '++++:ipAddressMask: "$ipAddressMask1"' >> v1.txt
+ !echo '++++:defaultRouter0: '$defaultRouter01 >> v1.txt
+ !echo '++++:ipAddress: '$ipAddress1 >> v1.txt
+ endfunc
+
+function obtain_s1
+
+ get ENodeBFunction=1 sctpRef > $temp
+ get $temp localIpAddress > $temp2
+ $temp2 = $temp2 -s .*Transport=1,
+ if $temp2 ~ IPv4
+  $ipStack1 = 4
+ else
+  $ipStack1 = 6
+ fi
+ $split_separator = ,
+ $s1 = split($temp2)
+ get $temp2 ^address$ > $s1_ip_address
+ $split_separator = /
+ $temp = split($s1_ip_address)
+ $ipAddress1 = $temp[1]
+ $ipAddressMask1 = $temp[2]
 
 endfunc
 
-
 #Main program starts here
 lt all
+
 pr ^enodebfunction=1
 if $nr_of_mos > 0
- obtain_rilinks_from_RGW_to_RU
- obtain_sector_equipment
- obtain_eutrancell
- obtain_eutranfreq
- obtain_eutranfreqrelation1
- obtain_gutransignal
- obtain_ExternalGUtranCell
- obtain_gutranfreqrel
- obtain_gutrancellrelation
- obtain_rgw
- obtain_tls
- obtain_fgw_e51_enb_exgnb
- obtain_boards
+ #obtain_oam_data
+ obtain_s1
+ #obtain_rilinks_from_RGW_to_RU
+ #obtain_sector_equipment
+ #obtain_eutrancell
+ #obtain_eutranfreq
+ #obtain_eutranfreqrelation1
+ #obtain_gutransignal
+ #obtain_ExternalGUtranCell
+ #obtain_gutranfreqrel
+ #obtain_gutrancellrelation
+ #obtain_rgw
+ #obtain_tls
+ #obtain_fgw_e51_enb_exgnb
+ #obtain_boards
  
  !cat v1.txt|sed 's,+, ,g' > $path1$file1.yaml
  !rm v1.txt
