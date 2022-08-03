@@ -263,7 +263,7 @@ function obtain_rgw
    mr RGW_hw $mo 
   fi
  done
- get RGW_hw fieldReplaceableUnitId > $fruId1p
+ get RGW_hw fieldReplaceableUnitId > $fruId1
  for $mo in RGW_hw
    $hw = ldn($mo)
  done
@@ -297,7 +297,7 @@ function obtain_rgw
   get $mo riPortRef2 > $temp1
   get $temp1 riPortId > $toPort1
  done
- !echo '++++fruId: "$fruId1"' >> v1.txt
+ !echo '++++fruId: '$fruId1 >> v1.txt
  !echo '++++riPorts: $riPorts1' >> v1.txt
  !echo '++++ipv6IpAddress: "$ipv6IpAddress1"' >> v1.txt
  !echo '++++c2cVlan: "$c2cVlan1"' >> v1.txt
@@ -451,12 +451,12 @@ function obtain_oam_data
  $port1 = $temp1[2]
  !echo ''>> v1.txt
  !echo '++oam:'>> v1.txt
- !echo '++++IpStack: '$ipStack1 >> v1.txt
+ !echo '++++ipStack: '$ipStack1 >> v1.txt
  !echo '++++port: '$port1 >> v1.txt
  !echo '++++vlan: "$vlan1"' >> v1.txt
- !echo '++++:ipAddressMask: "$ipAddressMask1"' >> v1.txt
- !echo '++++:defaultRouter0: '$defaultRouter01 >> v1.txt
- !echo '++++:ipAddress: '$ipAddress1 >> v1.txt
+ !echo '++++ipAddressMask: "$ipAddressMask1"' >> v1.txt
+ !echo '++++defaultRouter0: '$defaultRouter01 >> v1.txt
+ !echo '++++ipAddress: '$ipAddress1 >> v1.txt
  endfunc
 
 function obtain_s1
@@ -476,7 +476,23 @@ function obtain_s1
  $temp = split($s1_ip_address)
  $ipAddress1 = $temp[1]
  $ipAddressMask1 = $temp[2]
-
+ get $s1[1],.*,nexthop= ^address$ > $defaultRouter01
+ 
+ get $s1[1],$s1[2] encapsulation > $vlanport
+ get $vlanport vlanid > $vlan1
+ get $vlanport encapsulation > $temp
+ $split_separator = =
+ $temp1 = split($temp)
+ pv $temp1
+ $port1 = $temp1[2]
+ 
+ !echo '++s1:'>> v1.txt
+ !echo '++++IpStack: '$ipStack1 >> v1.txt
+ !echo '++++port: '$port1 >> v1.txt
+ !echo '++++vlan: "$vlan1"' >> v1.txt
+ !echo '++++ipAddressMask: "$ipAddressMask1"' >> v1.txt
+ !echo '++++defaultRouter0: '$defaultRouter01 >> v1.txt
+ !echo '++++	ipAddress: '$ipAddress1 >> v1.txt
 endfunc
 
 #Main program starts here
@@ -484,21 +500,21 @@ lt all
 
 pr ^enodebfunction=1
 if $nr_of_mos > 0
- #obtain_oam_data
+ obtain_oam_data
  obtain_s1
- #obtain_rilinks_from_RGW_to_RU
- #obtain_sector_equipment
- #obtain_eutrancell
- #obtain_eutranfreq
- #obtain_eutranfreqrelation1
- #obtain_gutransignal
- #obtain_ExternalGUtranCell
- #obtain_gutranfreqrel
- #obtain_gutrancellrelation
- #obtain_rgw
- #obtain_tls
- #obtain_fgw_e51_enb_exgnb
- #obtain_boards
+ obtain_rilinks_from_RGW_to_RU
+ obtain_sector_equipment
+ obtain_eutrancell
+ obtain_eutranfreq
+ obtain_eutranfreqrelation1
+ obtain_gutransignal
+ obtain_ExternalGUtranCell
+ obtain_gutranfreqrel
+ obtain_gutrancellrelation
+ obtain_rgw
+ obtain_tls
+ obtain_fgw_e51_enb_exgnb
+ obtain_boards
  
  !cat v1.txt|sed 's,+, ,g' > $path1$file1.yaml
  !rm v1.txt
