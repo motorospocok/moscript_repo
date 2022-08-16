@@ -126,6 +126,7 @@ function cell_check
   get_sector $1 $2
  else
   $err_text = Not_existing_cell_or_multiple_cells_were_found
+  $attempted_sector = NOT_RELEVANT
   print_error_report $err_text
   $error_flag = yes
  fi
@@ -149,6 +150,7 @@ endfunc
 
 function sector_check
  pr NodeSupport=1,SectorEquipmentFunction=$1
+ $attempted_sector = $1
  if $nr_of_mos = 0
    $err_text = This_sector_does_not_exist
    print_error_report $err_text
