@@ -1,17 +1,34 @@
 #Antenna setup script by ethtoja
 #Version 1.0
+#This script can be used to set sector config antennas
+#Usage:
+#From moshell 
+# runx set_antenna_for_TC.mos sector <sector_number> <number_of_atennas>
+# or
+# runx set_antenna_for_TC.mos  cell <EutranCellFDD_name> <number_of_atennas>
+# could be run from mobatch as well
 
+lt all
 gs
 conf
 
 function print_error_report
- pv $1
  $error1 = $1
- !echo $error1 >> err.txt 
+ get 0 userLabel > $site_name
+ $date = `date "+%Y-%m-%d %H:%M:%S"`
+ !echo '#--------------------------------------------------------------' >> result.txt
+ !echo '# Antenna setup result' >> result.txt
+ !echo '# Site_name '$site_name >> result.txt
+ !echo '# Generation date: '$date >> result.txt
+ !echo '# Attempted sector '$attempted_sector >> result.txt
+ !echo '# Result text: '$error1  >> result.txt
+ !echo '#--------------------------------------------------------------' >> result.txt
 endfunc
 
 
 function set_sector
+ 
+ $attempted_sector = $1
  $already_defined = no
  get NodeSupport=1,SectorEquipmentFunction=$1 rfBranchRef > $temp
  $split_separator = =
@@ -19,79 +36,177 @@ function set_sector
  if $temp2[1] ~ $2
   $already_defined = yes
   $err_text = This_sector_already_has_$2_antenna_setup
-   print_error_report $err_text
-   $error_flag = yes
+  print_error_report $err_text
+  $error_flag = yes
  fi
  $split_separator = ,
- $temp2 = split($temp)
- pv $temp2
+ $temp2 = split($temp) 
  get $temp2[2],RfBranch=A rfportRef > $temp3
  $rfbranch2 = $temp2[2],RfBranch=
  $temp2 = split($temp3)
  
  #Checking rfport, if not defined 4, then extend the config below
  
+ $FieldUnit1 = $temp2[1]
+ bl $FieldUnit1
+ $field_block_flag = 1
  pr $temp2[1],rFport=
- if $nr_of_mos < 4
+ 
+ if $nr_of_mos < 4 && $2 = 4
   cr $temp2[1],rFport=C
   cr $temp2[1],rFport=D
   cr $rfbranch2C
   cr $rfbranch2D
+  cr  Equipment=1,AntennaUnitGroup=$1,AntennaUnit=1,AntennaSubunit=3
+  cr  Equipment=1,AntennaUnitGroup=$1,AntennaUnit=1,AntennaSubunit=4
   cr  Equipment=1,AntennaUnitGroup=$1,AntennaUnit=1,AntennaSubunit=3,AuPort=1
   cr  Equipment=1,AntennaUnitGroup=$1,AntennaUnit=1,AntennaSubunit=4,AuPort=1
-  deb $temp2[1],rFport=C
-  deb $temp2[1],rFport=D
- fi
- 
- if $already_defined = no
-  #NEED TO CHECK THAT THE TESTCHANNELS ARE USING THE NAMING CONVENTIONS FOR ANTSUBUNIT BELOW
   set $rfbranch2C auportref Equipment=1,AntennaUnitGroup=$1,AntennaUnit=1,AntennaSubunit=3,AuPort=1
   set $rfbranch2D auportref Equipment=1,AntennaUnitGroup=$1,AntennaUnit=1,AntennaSubunit=4,AuPort=1
   set $rfbranch2C rfportref $temp2[1],rFport=C
   set $rfbranch2D rfportref $temp2[1],rFport=D
-  bl NodeSupport=1,SectorEquipmentFunction=$1
   set NodeSupport=1,SectorEquipmentFunction=$1 rfBranchRef $rfbranch2A $rfbranch2B $rfbranch2C $rfbranch2D
   deb $temp2[1],rFport=C
   deb $temp2[1],rFport=D
-  deb NodeSupport=1,SectorEquipmentFunction=$1
+  accn $FieldUnit1 restartUnit 1 1
+  $err_text = 4x4_config_setup_is_completed
+  print_error_report $err_text
  fi
- endfunc
+ 
+ if $nr_of_mos = 4 && $2 = 2
+  bl NodeSupport=1,SectorEquipmentFunction=$1
+  set NodeSupport=1,SectorEquipmentFunction=$1 rfBranchRef $rfbranch2A $rfbranch2B
+  bl $temp2[1],rFport=C
+  bl $temp2[1],rFport=D
+  get $rfbranch2C auportref > $au_port1
+  get $rfbranch2d auportref > $au_port2
+  set $rfbranch2C auportref
+  set $rfbranch2D auportref
+  set $rfbranch2C rfportref
+  set $rfbranch2D rfportref
+  $split_separator = ,
+  $au1 = split($au_port1)
+  $au2 = split($au_port2)
+  
+  del $au1[2],$au1[3],$au1[4],$au1[5]
+  del $au1[2],$au1[3],$au1[4]
+  del $au2[2],$au2[3],$au2[4],$au2[5]
+  del $au2[2],$au2[3],$au2[4]
+  
+  del $rfbranch2C
+  del $rfbranch2D
+  del $temp2[1],rFport=C
+  del $temp2[1],rFport=D
+  $err_text = 2x2_config_setup_is_completed
+  print_error_report $err_text
+ fi
+endfunc
+
+function get_sector
+ $eutrancell1 = EUtranCellFDD=$1
+ bl ENodeBFunction=1,EUtranCellFDD=$1
+ $block_cell_flag = 1
+ get ENodeBFunction=1,EUtranCellFDD=$1 sectorCarrierRef > $sec_carrer
+ $split_separator = \x20
+ $sec_carrier1 = split($sec_carrer)
+ get $sec_carrier1[7] sectorFunctionRef > $sector_ref
+ set $sec_carrier1[7] noOfRxAntennas $ant_number
+ set $sec_carrier1[7] noOfTxAntennas $ant_number
+ $split_separator = =
+ $sec_ref = split($sector_ref)
+ bl NodeSupport=1,SectorEquipmentFunction=$sec_ref[2]
+ $sector_block_flag = 1
+ $sector_num = $sec_ref[2]
+ set_sector $sec_ref[2] $2
+endfunc
+
+function cell_check
+ pr  ENodeBFunction=1,EUtranCellFDD=$1
+ if $nr_of_mos = 1
+  get_sector $1 $2
+ else
+  $err_text = Not_existing_cell_or_multiple_cells_were_found
+  print_error_report $err_text
+  $error_flag = yes
+ fi
+
+endfunc
+
+function block_cells
+ get NodeSupport=1,SectorEquipmentFunction=$1 reservedBy > $sector_carrier
+ if $sector_carrier ~ SectorCarrier
+  $split_separator = ,
+  $sec_carrier = split($sector_carrier)
+  get $sec_carrier[2] reservedby > $LteCell
+  $deblock_cell = split($LteCell)
+  bl $deblock_cell[2]
+  $eutrancell1 = $deblock_cell[2]
+  $block_cell_flag = 1
+  set $sec_carrier[2] noOfRxAntennas $ant_number 
+  set $sec_carrier[2] noOfTxAntennas $ant_number 
+ fi
+endfunc
 
 function sector_check
-pv $1
-pv $2
-
  pr NodeSupport=1,SectorEquipmentFunction=$1
  if $nr_of_mos = 0
    $err_text = This_sector_does_not_exist
    print_error_report $err_text
    $error_flag = yes
  else
-  set_sector $1 $2
+  bl NodeSupport=1,SectorEquipmentFunction=$1
+  $sector_block_flag = 1
+  block_cells $1
+  set_sector $sector_num $ant_number
  fi
 endfunc
 
+#-------------------------------------------------
+#main program starts here
+#-------------------------------------------------
+
+set SystemFunctions=1,Lm=1,FeatureState=CXC4011427 featureState 1 
+set SystemFunctions=1,Lm=1,FeatureState=CXC4011667 featureState 1
+set SystemFunctions=1,Lm=1,FeatureState=CXC4011056 featureState 1
+
 $error_flag = no
-if $1 != sector || cell
+$main1 = $1
+$block_cell_flag = 0
+$sector_block_flag = 0
+$field_block_flag = 0
+
+if $main1 = sector
+ $sector_num = $2
+ $ant_number = $3
+ sector_check $sector_num $ant_number
+fi
+
+if $main1 = cell
+ $cell_name = $2
+ $ant_number = $3
+ cell_check $cell_name $ant_number
+fi
+
+
+if $main1 != sector && $main1 != cell
    $err_text = No_valid_parameters_are_given_please_use_sector_or_cell_name
    print_error_report $err_text
    $error_flag = yes
 fi
 
-if $1 = sector
- $sector_num = $2
- $ant_number = $3
- sector_check $sector_num $ant_number
-fi
-if $1 = cell
- $cell_name = $2
- $ant_number = $3
- set_cell $cell_name $ant_number
+if $sector_block_flag = 1
+ deb NodeSupport=1,SectorEquipmentFunction=$sector_num
 fi
 
-if $error_flag = yes
- !cat err.txt
- !rm err.txt
-fi 
+if $field_block_flag = 1
+ deb $FieldUnit1
+fi
+
+if $block_cell_flag = 1
+ deb $eutrancell1
+fi
+
+ !cat result.txt
+ !rm result.txt
 gs
 confb
