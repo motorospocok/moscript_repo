@@ -1,0 +1,56 @@
+function call_nrcell_lock
+ ma nrcell_group GNBDUFunction=1,NRCellDU=
+ for $mo in nrcell_group
+  bl $mo
+  get $mo operationalState > $opstate
+  get $mo administrativeState > $adminstate
+  get $mo cellState > $cstate
+  $split_separator = (
+  $op1 = split($opstate)
+  $op1[2] = $op1[2] -s )
+  $ad1 = split($adminstate)
+  $ad1[2] = $ad1[2] -s )
+  $cs1 = split($cstate)
+  $cs1[2] = $cs1[2] -s )
+  
+  get $mo ^id$ > $id1
+  $op_time =  `date "+%Y-%m-%d %H:%M:%S"`
+  !echo 'Operation time:'$op_time' LOCK OPERATION on NRcellDU : '$id1' Operational state: '$op1[2]' Administrative state :'$ad1[2]' cell state: '$cs1[2] >> ~/result.txt
+  
+ done
+endfunc
+
+function call_nrcell_unlock
+ ma nrcell_group GNBDUFunction=1,NRCellDU=1
+ for $mo in nrcell_group
+  deb $mo
+  get $mo operationalState > $opstate
+  get $mo administrativeState > $adminstate
+  get $mo cellState > $cstate
+  $split_separator = (
+  $op1 = split($opstate)
+  $op1[2] = $op1[2] -s )
+  $ad1 = split($adminstate)
+  $ad1[2] = $ad1[2] -s )
+  $cs1 = split($cstate)
+  $cs1[2] = $cs1[2] -s )
+  get $mo ^id$ > $id1
+  $op_time =  `date "+%Y-%m-%d %H:%M:%S"`
+  if $opstate ~ ENABLED && $adminstate ~ UNLOCKED
+   $error = OK
+  else
+   $error = NOT_OK
+  fi
+  !echo 'Operation time:'$op_time' UNLOCK result '$error' NRcellDU : '$id1' Operational state: '$op1[2]' Administrative state :'$ad1[2]' cell state: '$cs1[2]  >> ~/result.txt
+ done
+endfunc
+ 
+$i = 1
+for 50
+ !echo '******************* '$i' test is started *****************************' >> ~/result.txt
+ call_nrcell_lock
+ call_nrcell_unlock
+ !echo '**********************************************************************' >> ~/result.txt
+ $i = $i + 1
+done
+
