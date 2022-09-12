@@ -30,10 +30,10 @@ function set_sector
  
  $attempted_sector = $1
  $already_defined = no
- get NodeSupport=1,SectorEquipmentFunction=$1 rfBranchRef > $temp
+ get NodeSupport=1,SectorEquipmentFunction=$attempted_sector rfBranchRef > $temp
  $split_separator = =
  $temp2 = split($temp)
- if $temp2[1] ~ $2
+ if $temp2[1] ~  $ant_number
   $already_defined = yes
   $err_text = This_sector_already_has_$2_antenna_setup
   print_error_report $err_text
@@ -52,17 +52,17 @@ function set_sector
  $field_block_flag = 1
  pr $temp2[1],rFport=
  
- if $nr_of_mos < 4 && $2 = 4
+ if $nr_of_mos < 4 &&  $ant_number = 4 && $already_defined = no
   cr $temp2[1],rFport=C
   cr $temp2[1],rFport=D
   cr $rfbranch2C
   cr $rfbranch2D
-  cr  Equipment=1,AntennaUnitGroup=$1,AntennaUnit=1,AntennaSubunit=3
-  cr  Equipment=1,AntennaUnitGroup=$1,AntennaUnit=1,AntennaSubunit=4
-  cr  Equipment=1,AntennaUnitGroup=$1,AntennaUnit=1,AntennaSubunit=3,AuPort=1
-  cr  Equipment=1,AntennaUnitGroup=$1,AntennaUnit=1,AntennaSubunit=4,AuPort=1
-  set $rfbranch2C auportref Equipment=1,AntennaUnitGroup=$1,AntennaUnit=1,AntennaSubunit=3,AuPort=1
-  set $rfbranch2D auportref Equipment=1,AntennaUnitGroup=$1,AntennaUnit=1,AntennaSubunit=4,AuPort=1
+  cr  Equipment=1,AntennaUnitGroup=$attempted_sector,AntennaUnit=1,AntennaSubunit=3
+  cr  Equipment=1,AntennaUnitGroup=$attempted_sector,AntennaUnit=1,AntennaSubunit=4
+  cr  Equipment=1,AntennaUnitGroup=$attempted_sector,AntennaUnit=1,AntennaSubunit=3,AuPort=1
+  cr  Equipment=1,AntennaUnitGroup=$attempted_sector,AntennaUnit=1,AntennaSubunit=4,AuPort=1
+  set $rfbranch2C auportref Equipment=1,AntennaUnitGroup=$attempted_sector,AntennaUnit=1,AntennaSubunit=3,AuPort=1
+  set $rfbranch2D auportref Equipment=1,AntennaUnitGroup=$attempted_sector,AntennaUnit=1,AntennaSubunit=4,AuPort=1
   set $rfbranch2C rfportref $temp2[1],rFport=C
   set $rfbranch2D rfportref $temp2[1],rFport=D
   set NodeSupport=1,SectorEquipmentFunction=$1 rfBranchRef $rfbranch2A $rfbranch2B $rfbranch2C $rfbranch2D
@@ -73,30 +73,39 @@ function set_sector
   print_error_report $err_text
  fi
  
- if $nr_of_mos = 4 && $2 = 2
+ if $nr_of_mos = 4 &&  $ant_number = 4 &&  $already_defined = no
+  set NodeSupport=1,SectorEquipmentFunction=$1 rfBranchRef $rfbranch2A $rfbranch2B $rfbranch2C $rfbranch2D
+  deb $temp2[1],rFport=C
+  deb $temp2[1],rFport=D
+  #accn $FieldUnit1 restartUnit 1 1
+  $err_text = 4x4_config_setup_is_completed
+  print_error_report $err_text
+ fi
+ 
+ if $nr_of_mos = 4 && $ant_number = 2 && $already_defined = no
   bl NodeSupport=1,SectorEquipmentFunction=$1
   set NodeSupport=1,SectorEquipmentFunction=$1 rfBranchRef $rfbranch2A $rfbranch2B
   bl $temp2[1],rFport=C
   bl $temp2[1],rFport=D
-  get $rfbranch2C auportref > $au_port1
-  get $rfbranch2d auportref > $au_port2
-  set $rfbranch2C auportref
-  set $rfbranch2D auportref
-  set $rfbranch2C rfportref
-  set $rfbranch2D rfportref
-  $split_separator = ,
-  $au1 = split($au_port1)
-  $au2 = split($au_port2)
+  #get $rfbranch2C auportref > $au_port1
+  #get $rfbranch2d auportref > $au_port2
+  #set $rfbranch2C auportref
+  #set $rfbranch2D auportref
+  #set $rfbranch2C rfportref
+  #set $rfbranch2D rfportref
+  #$split_separator = ,
+  #$au1 = split($au_port1)
+  #$au2 = split($au_port2)
   
-  del $au1[2],$au1[3],$au1[4],$au1[5]
-  del $au1[2],$au1[3],$au1[4]
-  del $au2[2],$au2[3],$au2[4],$au2[5]
-  del $au2[2],$au2[3],$au2[4]
+  #del $au1[2],$au1[3],$au1[4],$au1[5]
+  #del $au1[2],$au1[3],$au1[4]
+  #del $au2[2],$au2[3],$au2[4],$au2[5]
+  #del $au2[2],$au2[3],$au2[4]
   
-  del $rfbranch2C
-  del $rfbranch2D
-  del $temp2[1],rFport=C
-  del $temp2[1],rFport=D
+  #del $rfbranch2C
+  #del $rfbranch2D
+  #del $temp2[1],rFport=C
+  #del $temp2[1],rFport=D
   $err_text = 2x2_config_setup_is_completed
   print_error_report $err_text
  fi
@@ -134,7 +143,8 @@ function cell_check
 endfunc
 
 function block_cells
- get NodeSupport=1,SectorEquipmentFunction=$1 reservedBy > $sector_carrier
+ $attempted_sector = $1
+ get NodeSupport=1,SectorEquipmentFunction=$attempted_sector reservedBy > $sector_carrier
  if $sector_carrier ~ SectorCarrier
   $split_separator = ,
   $sec_carrier = split($sector_carrier)
@@ -158,8 +168,8 @@ function sector_check
  else
   bl NodeSupport=1,SectorEquipmentFunction=$1
   $sector_block_flag = 1
-  block_cells $1
-  set_sector $sector_num $ant_number
+  block_cells $attempted_sector
+  set_sector $attempted_sector $ant_number
  fi
 endfunc
 
@@ -179,6 +189,7 @@ $field_block_flag = 0
 
 if $main1 = sector
  $sector_num = $2
+ #ant_number is a global
  $ant_number = $3
  sector_check $sector_num $ant_number
 fi
