@@ -1,0 +1,38 @@
+#This script written for to obtain the VDU cell and sector configuration
+#V1.0 30th November by ethtoja
+#usage: run VDU_cell_info.mos <result_file>
+
+$time_now = `date`
+$target_file = $1
+lt all
+get 0 userLabel > $node_name
+
+function collect_sector_info
+ get $carrier2[3] essScPairId > $ess1
+ if $ess1 ~ [0..9]
+   $carrier_type = ESS_carrier
+ else
+   $carrier_type = Clean_carrier
+ fi
+ get $carrier2[3] sectorEquipmentFunctionRef > $rgw_sector1
+ $split_separator = =
+ $rgw_sector2 = split($rgw_sector1)
+endfunc
+
+!echo 'Script started at: '$time_now >> $target_file
+!echo 'Node Name;NrcellDu ID;NrPci value;DL Bandwidth;UL Bandwitdh;Carrier Type;Sector Number' >> $target_file
+ma VDU_cells GNBDUFunction=1,NRCellDU=
+for $mo in VDU_cells	
+ get $mo ^id$ > $VDU_CELL_ID
+ get $mo nrpci > $CELL_NRPCI
+ get $mo bSChannelBwDL > $VDU_CELL_DLBW
+ get $mo bSChannelBwDL > $VDU_CELL_ULBW
+ get $mo nRSectorCarrierRef > $carrier1
+ $split_separator = ,
+ $carrier2 = split($carrier1)
+ collect_sector_info
+ !echo $node_name';'$VDU_CELL_ID';'$CELL_NRPCI';'$VDU_CELL_DLBW';'$VDU_CELL_ULBW';'$carrier_type';'$rgw_sector2[4] >> $target_file
+done 
+$time_now = `date`
+!echo 'Script finished at :'$time_now >> $target_file
+
