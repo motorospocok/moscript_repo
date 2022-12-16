@@ -528,7 +528,7 @@ function obtain_dns_cache
  for $mo in dns_group
   get $mo serviceName > $serviceName1
   get $mo addressRecordId > $addressRecordId1
-  get $mo serviceAddress > $ipv6IpAddress1
+  get $mo serviceAddress$ > $ipv6IpAddress1
   get $mo serviceAddressPort > $serviceAddressPort1 
  !echo '++++- addressRecordId: '$addressRecordId1 >> v1.txt
  !echo '++++++serviceName: '$serviceName1 >> v1.txt
@@ -537,6 +537,93 @@ function obtain_dns_cache
  done
 endfunc
 
+function obtain_nrcelldu
+ !echo '' >> v1.txt
+ !echo '++cell:' >> v1.txt
+ ma nrcelldu1 GNBDUFunction=1,NRCellDU=
+ for $mo in nrcelldu1
+  get $mo ^id$ > $id1
+  get $mo nRSectorCarrierRef > $ref1
+  $split_separator = =
+  $ref2 = split($ref1)
+  $sectorCarrier1 = $ref2[6]
+  get $mo ssbSubCarrierSpacing > $ssbSubCarrierSpacing1
+  get $mo arfcnDL > $arfcnDL1
+  get $mo arfcnUL > $arfcnUL1
+  get $mo ssbPeriodicity > $ssbPeriodicity1
+  get $mo ssbOffset > $ssbOffset1
+  get $mo ssbFrequency > $ssbFrequency1
+  get $mo ssbDuration > $ssbDuration1
+  get $mo nRTAC > $nRTAC1
+  get $mo bSChannelBwDL > $bSChannelBwDL1
+  get $mo bSChannelBwUL > $bSChannelBwUL1
+  get $mo nRPCI > $nRPCI1
+  get $mo bWPRef > $temp1
+  $split_separator = =
+  $temp1 = $temp1 -s \xA -g
+  $temp1 = $temp1 -s >>> -r = -g
+  $temp1 = $temp1 -s \x20 -g
+  $temp2 = split($temp1)
+  $bWPRef11 = $temp2[7]
+  $bWPRef22 = $temp2[12]
+  
+  get $mo endcUlLegSwitch > $endcUlLegSwitch1
+  get $mo endcDlLegSwitch > $endcDlLegSwitch1
+  get $mo endcDlNrLowQualThresh > $endcDlNrLowQualThresh1
+  get $mo endcUlNrLowQualThresh > $endcUlNrLowQualThresh1
+  get $mo endcUlNrQualHyst > $endcUlNrQualHyst1
+  get $mo endcDlNrQualHyst > $endcDlNrQualHyst1
+  get $mo puschStartPrbStrategy > $temp1
+  $temp2 = `echo "$temp1" | tr -d '()'`
+  $split_separator = \x20
+  $temp3 = split($temp2)
+  $puschStartPrbStrategy1 = $temp3[2]
+   
+  get $mo pdschStartPrbStrategy > $temp1
+  $temp2 = `echo "$temp1" | tr -d '()'`
+  $split_separator = \x20
+  $temp3 = split($temp2)
+  $pdschStartPrbStrategy1 = $temp3[2]
+  get $mo drxEnable > $drxEnable1
+  get $mo drxInactivityTimer > $drxInactivityTimer1
+  get $mo drxLongCycle > $drxLongCycle1
+  get $mo drxOnDurationTimer > $drxOnDurationTimer1
+  get $mo pdschInDmrsSymEnabled > $pdschInDmrsSymEnabled1
+  
+  !echo '++++- id: "'$id1'"' >> v1.txt
+  !echo '++++++sectorCarrier: "'$sectorCarrier1'"' >> v1.txt
+  !echo '++++++ssbSubCarrierSpacing: "'$ssbSubCarrierSpacing1'"' >> v1.txt
+  !echo '++++++arfcnDL: "'$arfcnDL1'"' >> v1.txt
+  !echo '++++++ssbPeriodicity: "'$ssbPeriodicity1'"' >> v1.txt
+  !echo '++++++arfcnUL: "'$arfcnUL1'"' >> v1.txt
+  !echo '++++++ssbOffset: "'$ssbOffset1'"' >> v1.txt
+  !echo '++++++ssbFrequency: "'$ssbFrequency1'"' >> v1.txt
+  !echo '++++++ssbDuration: "'$ssbDuration1'"' >> v1.txt
+  !echo '++++++nRTAC: "'$nRTAC1'"' >> v1.txt
+  !echo '++++++bSChannelBwDL: "'$bSChannelBwDL1'"' >> v1.txt 
+  !echo '++++++bSChannelBwUL: "'$bSChannelBwUL1'"' >> v1.txt
+  !echo '++++++nRPCI: "'$nRPCI1'"' >> v1.txt
+  !echo '++++++bWPRef: ["'$bWPRef11'","'$bWPRef22'"]' >> v1.txt
+  !echo '++++++endcUlLegSwitch: "'$endcUlLegSwitch1'"' >> v1.txt
+  !echo '++++++endcDlLegSwitch: "'$endcDlLegSwitch1'"' >> v1.txt
+  !echo '++++++endcDlNrLowQualThresh: '$endcDlNrLowQualThresh1 >> v1.txt
+  !echo '++++++endcUlNrLowQualThresh: '$endcUlNrLowQualThresh1 >> v1.txt
+  !echo '++++++endcUlNrQualHyst: '$endcUlNrQualHyst1 >> v1.txt
+  !echo '++++++endcDlNrQualHyst: '$endcDlNrQualHyst1 >> v1.txt
+  !echo '++++++puschStartPrbStrategy: '$puschStartPrbStrategy1 >> v1.txt
+  !echo '++++++pdschStartPrbStrategy: '$pdschStartPrbStrategy1 >> v1.txt
+  !echo '++++++drxEnable: '$drxEnable1 >> v1.txt
+  !echo '++++++drxInactivityTimer: '$drxInactivityTimer1 >> v1.txt
+  !echo '++++++drxLongCycle: '$drxLongCycle1 >> v1.txt
+  !echo '++++++drxOnDurationTimer: '$drxOnDurationTimer1 >> v1.txt
+  if $pdschInDmrsSymEnabled1 = true
+   !echo '++++++attributes:' >> v1.txt
+   !echo '++++++++- name: "pdschInDmrsSymEnabled"' >> v1.txt
+   !echo '++++++++++value: "true"' >> v1.txt 
+  fi
+ done
+
+endfunc
  
  
 #Main program starts here
@@ -579,6 +666,7 @@ if $nr_of_mos > 0
  !echo '' >> v1.txt
  obtain_vdu_gnb
  obtain_dns_cache
+ obtain_nrcelldu
  !cat v1.txt|sed 's,+, ,g' > $path1$file1.yaml
  !rm v1.txt
  
