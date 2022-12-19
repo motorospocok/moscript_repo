@@ -1,9 +1,11 @@
-#This script was written for cloning existing configuration to Yaml file
+#This script was written for cloning existing configuration to Yaml file - V1.5
 #V1.0 - Supported cloning function for EnodeB: eutrancell,eutranfreq and relation,gutrancell,gutranfreq,gutrancellrelation,rgw,tls,
 # Limitations:
 # - Discovery service hardcoded
 # - VDU plmn hardcoded to 262 80
+#2022 december 19 - V1.5 added VDU support 
 
+$version = 1.5v
 s+
 #Variable initialization
 $path1 = ~/CloneToYaml/
@@ -624,15 +626,262 @@ function obtain_nrcelldu
  done
 
 endfunc
+
+function obtain_nr_sector_carrier
+ !echo '' >> v1.txt
+ !echo '++sectorCarrier:' >> v1.txt
+ ma nrCarrier GNBDUFunction=1,NRSectorCarrier=
+ for $mo in nrCarrier
+  get $mo ^id$ > $id1
+  get $mo configuredMaxTxPower > $configuredMaxTxPower1
+  get $mo txDirection > $temp1
+  $temp2 = `echo "$temp1" | tr -d '()'`
+  $split_separator = \x20
+  $temp3 = split($temp2)
+  $txDirection1 = $temp3[2]
+  get $mo arfcnDL > $arfcnDL1
+  get $mo arfcnUL > $arfcnUL1
+  get $mo bSChannelBwDL > $bSChannelBwDL1
+  get $mo bSChannelBwUL > $bSChannelBwUL1
+  get $mo sectorEquipmentFunctionRef > $temp1
+  $split_separator = =
+  $temp2 = split($temp1)
+  $sectorequipmentfunc1 = $temp2[4]
+  get $mo essScLocalId > $ess1
+  if $ess1 ~ [0..9]
+   get $mo essScPairId > $essScPairId1
+   get $mo essScLocalId > $essScLocalId1
+   get $mo essMbsfnSubframeConfig > $essMbsfnSubframeConfig1
+  fi
+  
+  !echo '++++- id: "'$id1'"' >> v1.txt
+  !echo '++++++configuredMaxTxPower: "'$configuredMaxTxPower1'"' >> v1.txt
+  !echo '++++++txDirection: '$txDirection1 >> v1.txt
+  !echo '++++++arfcnDL: "'$arfcnDL1'"' >> v1.txt
+  !echo '++++++arfcnUL: "'$arfcnUL1'"' >> v1.txt
+  !echo '++++++bSChannelBwDL: "'$bSChannelBwDL1'"' >> v1.txt
+  !echo '++++++bSChannelBwUL: "'$bSChannelBwUL1'"' >> v1.txt
+  !echo '++++++sectorequipmentfunc: "'$sectorequipmentfunc1'"' >> v1.txt
+  if $ess1 ~ [0..9]
+   !echo '++++++attributes:' >> v1.txt
+   !echo '++++++++- name: essScPairId' >> v1.txt
+   !echo '++++++++++scheme: ''"'"'"'urn:rdns:com:ericsson:oammodel:ericsson-nrsectorcarrier-vdu-ext'"'"'"' >> v1.txt
+   !echo '++++++++++value: ' $essScPairId1 >> v1.txt  
+   !echo '++++++++- name: essScLocalId' >> v1.txt
+   !echo '++++++++++scheme: ''"'"'"'urn:rdns:com:ericsson:oammodel:ericsson-nrsectorcarrier-vdu-ext'"'"'"' >> v1.txt
+   !echo '++++++++++value: ' $essScLocalId1 >> v1.txt
+   !echo '++++++++- name: essMbsfnSubframeConfig' >> v1.txt
+   !echo '++++++++++scheme: ''"'"'"'urn:rdns:com:ericsson:oammodel:ericsson-nrsectorcarrier-vdu-ext'"'"'"' >> v1.txt
+   !echo '++++++++++value: ''"'$essMbsfnSubframeConfig1'"' >> v1.txt
+  fi
+ done
+endfunc
+ 
+function obtain_bwp
+ !echo '' >> v1.txt
+ !echo '++bwp:' >> v1.txt
+ ma bwp_group GNBDUFunction=1,BWP=
+ for $mo in bwp_group
+  get $mo ^id$ > $id1
+  get $mo bwpContext > $temp1
+  $temp2 = `echo "$temp1" | tr -d '()'`
+  $split_separator = \x20
+  $temp3 = split($temp2)
+  $split_separator = \x20
+  $temp3 = split($temp2)
+  $bwpContext1 = $temp3[2]
+  get $mo isInitialBwp > $temp1
+  $temp2 = `echo "$temp1" | tr -d '()'`
+  $split_separator = \x20
+  $temp3 = split($temp2)
+  $split_separator = \x20
+  $temp3 = split($temp2)
+  $isInitialBwp1 = $temp3[2]
+  get $mo cyclicPrefix > $temp1
+  $temp2 = `echo "$temp1" | tr -d '()'`
+  $split_separator = \x20
+  $temp3 = split($temp2)
+  $split_separator = \x20
+  $temp3 = split($temp2)
+  $cyclicPrefix1 = $temp3[2]
+  get $mo startRB > $startRB1
+  get $mo numberOfRBs > $numberOfRBs1
+  get $mo pZeroUePuschOffset256Qam > $pZeroUePuschOffset256Qam1
+  get $mo pZeroNomPuschGrant > $pZeroNomPuschGrant1
+  get $mo pZeroNomPucch > $pZeroNomPucch1
+  get $mo enable256QAM > $enable256QAM1
+  !echo '++++- id: "'$id1'"' >> v1.txt
+  !echo '++++++bwpContext: "'$bwpContext1'"' >> v1.txt
+  !echo '++++++isInitialBwp: "'$isInitialBwp1'"' >> v1.txt
+  !echo '++++++cyclicPrefix: "'$cyclicPrefix1'"' >> v1.txt
+  !echo '++++++startRB: '$startRB1 >> v1.txt
+  !echo '++++++numberOfRBs: '$numberOfRBs1 >> v1.txt
+  !echo '++++++pZeroUePuschOffset256Qam: '$pZeroUePuschOffset256Qam1 >> v1.txt
+  !echo '++++++pZeroNomPuschGrant: '$pZeroNomPuschGrant1 >> v1.txt
+  !echo '++++++pZeroNomPucch: '$pZeroNomPucch1 >> v1.txt
+  !echo '++++++enable256QAM: "'$enable256QAM1'"' >> v1.txt
+ done
+endfunc 
+
+function obtain_drbRLCRef
+ !echo '' >> v1.txt
+ !echo '++drbRLCRef:' >> v1.txt
+ ma drb_group GNBDUFunction=1,UeCC=.*,RadioLinkControl=.*,DrbRLC=
+ for $mo in drb_group
+  get $mo ^id$ > $id1
+  get $mo dlPollPdu > $dlPollPdu1
+  get $mo sNLength > $sNLength1
+  get $mo tReassemblyUl > $tReassemblyUl1
+  get $mo tStatusProhibitDl > $tStatusProhibitDl1
+  get $mo tReassemblyDl > $tReassemblyDl1
+  get $mo tStatusProhibitUl > $tStatusProhibitUl1
+  get $mo tPollRetransmitUl > $tPollRetransmitUl1
+  get $mo dlMaxRetxThreshold > $dlMaxRetxThreshold1
+  get $mo tPollRetransmitDl > $tPollRetransmitDl1
+  get $mo ulMaxRetxThreshold > $ulMaxRetxThreshold1
+  get $mo ulPollPdu > $ulPollPdu1
+  !echo '++++- id: "'$id1'"' >> v1.txt
+  !echo '++++++dlPollPdu: '$dlPollPdu1 >> v1.txt
+  !echo '++++++sNLength: '$sNLength1 >> v1.txt
+  !echo '++++++tReassemblyUl: '$tReassemblyUl1 >> v1.txt
+  !echo '++++++tStatusProhibitDl: '$tStatusProhibitDl1 >> v1.txt
+  !echo '++++++tReassemblyDl: '$tReassemblyDl1 >> v1.txt
+  !echo '++++++tStatusProhibitUl: '$tStatusProhibitUl1 >> v1.txt
+  !echo '++++++tPollRetransmitUl: '$tPollRetransmitUl1 >> v1.txt
+  !echo '++++++dlMaxRetxThreshold: '$dlMaxRetxThreshold1 >> v1.txt
+  !echo '++++++tPollRetransmitDl: '$tPollRetransmitDl1 >> v1.txt
+  !echo '++++++ulMaxRetxThreshold: '$ulMaxRetxThreshold1 >> v1.txt
+  !echo '++++++ulPollPdu: '$ulPollPdu1 >> v1.txt
+ done
+endfunc
+
+function obtain_schedulingProfileRef
+ !echo '' >> v1.txt
+ !echo '++schedulingProfileRef:' >> v1.txt
+ ma sch_group ,ManagedElement=1,GNBDUFunction=.*,UeCC=.*,SchedulingProfile=
+ for $mo in sch_group
+  get $mo ^id$ > $id1
+  get $mo relativePriorityMode > $temp1
+  $temp2 = `echo "$temp1" | tr -d '()'`
+  $split_separator = \x20
+  $temp3 = split($temp2)
+  $split_separator = \x20
+  $temp3 = split($temp2)
+  $relativePriorityMode1 = $temp3[2]
+  get $mo relativePriority$ > $relativePriority1
+  !echo '++++- id: "'$id1'"' >> v1.txt
+  !echo '++++++relativePriorityMode: '$relativePriorityMode1 >> v1.txt
+  !echo '++++++relativePriority: '$relativePriority1 >> v1.txt
+ done
+endfunc
+
+function obtain_srbRLCRef
+ !echo '' >> v1.txt
+ !echo '++srbRLCRef:' >> v1.txt
+ ma srb_group GNBDUFunction=1,UeCC=.*,RadioLinkControl=.*,SrbRLC=.*
+ for $mo in srb_group
+  get $mo ^id$ > $id1
+  get $mo ^dlMaxRetxThreshold$ > $dlMaxRetxThreshold1
+  get $mo ^tPollRetransmitDl$ > $tPollRetransmitDl1
+  get $mo ^tPollRetransmitUl$ > $tPollRetransmitUl1
+  get $mo ^tReassemblyDl$ > $tReassemblyDl1
+  get $mo ^tReassemblyUl$ > $tReassemblyUl1
+  get $mo ^ulMaxRetxThreshold$ > $ulMaxRetxThreshold1
+  !echo '++++- id: "'$id1'"' >> v1.txt  
+  !echo '++++++dlMaxRetxThreshold: '$dlMaxRetxThreshold1	 >> v1.txt
+  !echo '++++++tPollRetransmitDl: '$tPollRetransmitDl1 >> v1.txt  
+  !echo '++++++tPollRetransmitUl: '$tPollRetransmitUl1 >> v1.txt
+  !echo '++++++tReassemblyDl: '$tReassemblyDl1 >> v1.txt
+  !echo '++++++tReassemblyUl: '$tReassemblyUl1 >> v1.txt
+  !echo '++++++ulMaxRetxThreshold: '$ulMaxRetxThreshold1 >> v1.txt
+ done
+endfunc
+  
+function obtain_qosMapping
+ !echo '' >> v1.txt
+ !echo '++qosMapping:' >> v1.txt
+ ma qos_group ManagedElement=1,GNBDUFunction=1,QosPriorityMapping=
+ for $mo in qos_group
+  get $mo  ^id$ > $id1
+  !echo '++++id: '$id1 >> v1.txt
+  $temp1 = ldn($mo)
+  obtain_domain_map $temp1 
+ done
+endfunc
+
+function obtain_domain_map
+
+ ma domain_group $1,PriorityDomainMapping=
+ 
+ # needed to unset because cause problems with linux awk
+ unset $0 
+ 
+ !echo '++++domainMapping:' >> v1.txt
+ for $mo in domain_group
+  get $mo  ^id$ > $id1
+  get $mo priorityDomain > $priorityDomain1
+  get $mo priorityLevelsList > $temp1
+  $split_separator = =
+  $temp2 = split($temp1)
+  $temp3 = $temp2[2] -s \x20 -r "," -g
+  $temp41 = `echo '$temp3' | awk '{print substr ($0,3,length($0)-4)}'`
+  !echo '++++++id: '$id1  >> v1.txt
+  !echo '++++++priorityDomain: '$priorityDomain1 >> v1.txt
+  !echo '++++++levelsList: [$temp41]' >> v1.txt
+ done
+ !echo '' >> v1.txt
+ get GNBDUFunction=1,DU5qiTable=1 default5qiTable > $default5qiTable1
+ !echo '++duqiTable:' >> v1.txt
+ !echo '++++default5qiTable: '$default5qiTable1 >> v1.txt
+ !echo '' >> v1.txt
+ 
+ #Value below hardwired need to check in the AD guide how to obtain
+ !echo '++enableQitable: true' >> v1.txt
+
+endfunc
+
+function obtain_quitable
+
+# I think this format is faulty :  schedulingProfileRef: ["1","2"] there must be only one reference
+ 
+ !echo '' >> v1.txt
+ !echo '++qitable:' >> v1.txt
+ ma quitable_group  ManagedElement=1,GNBDUFunction=1,DU5qiTable=1,DU5qi=
+ for $mo in quitable_group
+  get $mo ^id$ > $id1
+  get $mo profile5qi > $profile5qi1
+  get $mo logicalChannelGroupId > $logicalChannelGroupId1
+  get $mo packetDelayBudget > $packetDelayBudget1
+  get $mo priorityLevel > $priorityLevel1
+  $split_separator = =
+  get $mo schedulingProfileRef > $temp1
+  $temp2 = split($temp1)
+  $schedulingProfileRef1 = $temp2[5]
+  get $mo drbRLCRef > $temp1
+  $temp2 = split($temp1)
+  $drbRLCRef1 = $temp2[6]
+  !echo '++++- id: "'$id1'"' >> v1.txt
+  !echo '++++++profile5qi: '$profile5qi1 >> v1.txt
+  !echo '++++++logicalChannelGroupId: '$logicalChannelGroupId1 >> v1.txt
+  !echo '++++++packetDelayBudget: '$packetDelayBudget1 >> v1.txt
+  !echo '++++++priorityLevel: '$priorityLevel1 >> v1.txt
+  !echo '++++++schedulingProfileRef: ["$schedulingProfileRef1"]' >> v1.txt
+  !echo '++++++drbRLCRef: ["$drbRLCRef1"]' >> v1.txt
+ done
+endfunc
  
  
-#Main program starts here
+#########################################################
+#               Main program starts below               #
+#########################################################
+
 lt all
 pr ^enodebfunction=1
 if $nr_of_mos > 0
+ $apple = readinput(It seems the script is running on msrbs, hit ENTER)
  $date = `date "+%Y-%m-%d %H:%M:%S"`
  !echo '#--------------------------------------------------------------' >> v1.txt
- !echo '# This file was generated by CloneToYaml tool' >> v1.txt
+ !echo '# This file was generated by CloneToYaml tool '$version >> v1.txt
  !echo '# Generation date: '$date >> v1.txt
  !echo '#--------------------------------------------------------------' >> v1.txt
  !echo '' >> v1.txt
@@ -656,17 +905,31 @@ if $nr_of_mos > 0
  !rm v1.txt
 fi
 
-st nrcelldu
+pr DnsCache
 if $nr_of_mos > 0
+ $apple = readinput(It seems the script is running on VDU, hit ENTER)
  $date = `date "+%Y-%m-%d %H:%M:%S"`
  !echo '#--------------------------------------------------------------' >> v1.txt
- !echo '# This file was generated by CloneToYaml tool' >> v1.txt
+ !echo '# This file was generated by CloneToYaml tool '$version >> v1.txt
  !echo '# Generation date: '$date >> v1.txt
  !echo '#--------------------------------------------------------------' >> v1.txt
  !echo '' >> v1.txt
  obtain_vdu_gnb
  obtain_dns_cache
  obtain_nrcelldu
+ obtain_nr_sector_carrier
+ obtain_bwp
+ obtain_drbRLCRef
+ obtain_schedulingProfileRef
+ obtain_srbRLCRef
+ obtain_qosMapping
+ obtain_quitable
+ $date = `date "+%Y-%m-%d %H:%M:%S"`
+ !echo '#--------------------------------------------------------------' >> v1.txt
+ !echo '# File generated successfully' >> v1.txt
+ !echo '# Finishing date: '$date >> v1.txt
+ !echo '#--------------------------------------------------------------' >> v1.txt
+ !echo '' >> v1.txt
  !cat v1.txt|sed 's,+, ,g' > $path1$file1.yaml
  !rm v1.txt
  
