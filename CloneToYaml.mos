@@ -338,7 +338,7 @@ function obtain_tls
  !echo '++++subjectName:' $subjectName1 >> v1.txt
 endfunc
 
-function obtain_fgw_e51_enb_exgnb
+function obtain_fgw_e5l_enb_exgnb
 
  !echo ''>> v1.txt
  !echo '++fgw:'>> v1.txt
@@ -365,7 +365,7 @@ function obtain_fgw_e51_enb_exgnb
  $split_separator = =
  $temp3 = split($temp2)
  $port1 = $temp3[2]
- !echo '++e51:' >> v1.txt
+ !echo '++e5l:' >> v1.txt
  !echo '++++port: "$port1"' >> v1.txt
  !echo '++++vlanId: "$vlanId1"' >> v1.txt
  get ENodeBFunction=1 eNBId > $id1
@@ -898,7 +898,7 @@ if $nr_of_mos > 0
  obtain_gutrancellrelation
  obtain_rgw
  obtain_tls
- obtain_fgw_e51_enb_exgnb
+ obtain_fgw_e5l_enb_exgnb
  obtain_boards
  
  !cat v1.txt|sed 's,+, ,g' > $path1$file1.yaml
