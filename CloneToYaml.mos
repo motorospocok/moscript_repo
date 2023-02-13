@@ -117,8 +117,8 @@ function obtain_eutranfreq
  for $mo in eFreq
   get $mo eUtranFrequencyId > $id1
   get $mo arfcnValueEUtranDl > $arfcnValueEUtranDl1
-  !echo '+++- id: "$id1"' >> v1.txt
-  !echo '+++++arfcnValueEUtranDl: "$arfcnValueEUtranDl1"' >> v1.txt
+  !echo '++++- id: "$id1"' >> v1.txt
+  !echo '++++++arfcnValueEUtranDl: "$arfcnValueEUtranDl1"' >> v1.txt
  done
 endfunc
 
