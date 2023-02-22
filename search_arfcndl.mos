@@ -1,0 +1,229 @@
+#This scripts converts the LTE and NR freqs in a msrbs or in a VDU
+#This script creates the following file: Earfcn_tableV1.txt
+#V1.0 - Supports multiple gnb in msrbs - 2023 Feb 22
+
+$logToFile = ~/RealMenDrinkOnlyEspresso.txt
+
+#####################FUNCTION DECLARATION BLOCKS STARTS HERE ########################################
+
+function create_arfcn_table
+!echo '﻿1,2110,0,0-599,1920,18000,18000-18599' >> Earfcn_tableV1.txt
+!echo '2,1930,600,600-1199,1850,18600,18600-19199' >> Earfcn_tableV1.txt
+!echo '3,1805,1200,1200-1949,1710,19200,19200-19949' >> Earfcn_tableV1.txt
+!echo '4,2110,1950,1950-2399,1710,19950,19950-20399' >> Earfcn_tableV1.txt
+!echo '5,869,2400,2400-2649,824,20400,20400-20649' >> Earfcn_tableV1.txt
+!echo '6,875,2650,2650-2749,830,20650,20650-20749' >> Earfcn_tableV1.txt
+!echo '7,2620,2750,2750-3449,2500,20750,20750-21449' >> Earfcn_tableV1.txt
+!echo '8,925,3450,3450-3799,880,21450,21450-21799' >> Earfcn_tableV1.txt
+!echo '9,1844.9,3800,3800-4149,1749.9,21800,21800-22149' >> Earfcn_tableV1.txt
+!echo '10,2110,4150,4150-4749,1710,22150,22150-22749' >> Earfcn_tableV1.txt
+!echo '11,1475.9,4750,4750-4949,1427.9,22750,22750-22949' >> Earfcn_tableV1.txt
+!echo '12,729,5010,5010-5179,699,23010,23010-23179' >> Earfcn_tableV1.txt
+!echo '13,746,5180,5180-5279,777,23180,23180-23279' >> Earfcn_tableV1.txt
+!echo '14,758,5280,5280-5379,788,23280,23280-23379' >> Earfcn_tableV1.txt
+!echo '17,734,5730,5730-5849,704,23730,23730-23849' >> Earfcn_tableV1.txt
+!echo '18,860,5850,5850-5999,815,23850,23850-23999' >> Earfcn_tableV1.txt
+!echo '19,875,6000,6000-6149,830,24000,24000-24149' >> Earfcn_tableV1.txt
+!echo '20,791,6150,6150-6449,832,24150,24150-24449' >> Earfcn_tableV1.txt
+!echo '21,1495.9,6450,6450-6599,1447.9,24450,24450-24599' >> Earfcn_tableV1.txt
+!echo '22,3510,6600,6600-7399,3410,24600,24600-25399' >> Earfcn_tableV1.txt
+!echo '23,2180,7500,7500-7699,2000,25500,25500-25699' >> Earfcn_tableV1.txt
+!echo '24,1525,7700,7700-8039,1626.5,25700,25700-26039' >> Earfcn_tableV1.txt
+!echo '25,1930,8040,8040-8689,1850,26040,26040-26689' >> Earfcn_tableV1.txt
+!echo '26,859,8690,8690-9039,814,26690,26690-27039' >> Earfcn_tableV1.txt
+!echo '27,852,9040,9040-9209,807,27040,27040-27209' >> Earfcn_tableV1.txt
+!echo '28,758,9210,9210-9659,703,27210,27210-27659' >> Earfcn_tableV1.txt
+!echo '292,717,9660,9660-9769,N/A,,' >> Earfcn_tableV1.txt
+!echo '30,2350,9770,9770-9869,2305,27660,27660-27759' >> Earfcn_tableV1.txt
+!echo '31,462.5,9870,9870-9919,452.5,27760,27760-27809' >> Earfcn_tableV1.txt
+!echo '322,1452,9920,9920-10359,N/A,,' >> Earfcn_tableV1.txt
+!echo '33,1900,36000,36000-36199,1900,36000,36000-36199' >> Earfcn_tableV1.txt
+!echo '34,2010,36200,36200-36349,2010,36200,36200-36349' >> Earfcn_tableV1.txt
+!echo '35,1850,36350,36350-36949,1850,36350,36350-36949' >> Earfcn_tableV1.txt
+!echo '36,1930,36950,36950-37549,1930,36950,36950-37549' >> Earfcn_tableV1.txt
+!echo '37,1910,37550,37550-37749,1910,37550,37550-37749' >> Earfcn_tableV1.txt
+!echo '38,2570,37750,37750-38249,2570,37750,37750-38249' >> Earfcn_tableV1.txt
+!echo '39,1880,38250,38250-38649,1880,38250,38250-38649' >> Earfcn_tableV1.txt
+!echo '40,2300,38650,38650-39649,2300,38650,38650-39649' >> Earfcn_tableV1.txt
+!echo '41,2496,39650,39650-41589,2496,39650,39650-41589' >> Earfcn_tableV1.txt
+!echo '42,3400,41590,41590-43589,3400,41590,41590-43589' >> Earfcn_tableV1.txt
+!echo '43,3600,43590,43590-45589,3600,43590,43590-45589' >> Earfcn_tableV1.txt
+!echo '44,703,45590,45590-46589,703,45590,45590-46589' >> Earfcn_tableV1.txt
+!echo '45,1447,46590,46590-46789,1447,46590,46590-46789' >> Earfcn_tableV1.txt
+!echo '46,5150,46790,46790-54539,5150,46790,46790-54539' >> Earfcn_tableV1.txt
+!echo '47,5855,54540,54540-55239,5855,54540,54540-55239' >> Earfcn_tableV1.txt
+!echo '48,3550,55240,55240-56739,3550,55240,55240-56739' >> Earfcn_tableV1.txt
+!echo '49,3550,56740,56740-58239,3550,56740,56740-58239' >> Earfcn_tableV1.txt
+!echo '50,1432,58240,58240-59089,1432,58240,58240-59089' >> Earfcn_tableV1.txt
+!echo '51,1427,59090,59090-59139,1427,59090,59090-59139' >> Earfcn_tableV1.txt
+!echo '52,3300,59140,59140-60139,3300,59140,59140-60139' >> Earfcn_tableV1.txt
+!echo '53,2483.5,60140,60140-60254,2483.5,60140,60140-60254' >> Earfcn_tableV1.txt
+!echo '65,2110,65536,65536-66435,1920,131072,131072-131971' >> Earfcn_tableV1.txt
+!echo '66,2110,66436,66436-67335,1710,131972,131972-132671' >> Earfcn_tableV1.txt
+!echo '67,738,67336,67336-67535,N/A,,' >> Earfcn_tableV1.txt
+!echo '68,753,67536,67536-67835,698,132672,132672-132971' >> Earfcn_tableV1.txt
+!echo '69,2570,67836,67836-68335,N/A,,' >> Earfcn_tableV1.txt
+!echo '70,1995,68336,68336-68585,1695,132972,132972-133121' >> Earfcn_tableV1.txt
+!echo '71,617,68586,68586-68935,663,133122,133122-133471' >> Earfcn_tableV1.txt
+!echo '72,461,68936,68936-68985,451,133472,133472-133521' >> Earfcn_tableV1.txt
+!echo '73,460,68986,68986-69035,450,133522,133522-133571' >> Earfcn_tableV1.txt
+!echo '74,1475,69036,69036-69465,1427,133572,133572-134001' >> Earfcn_tableV1.txt
+!echo '75,1432,69466,69466-70315,N/A,,' >> Earfcn_tableV1.txt
+!echo '76,1427,70316,70316-70365,N/A,,' >> Earfcn_tableV1.txt
+!echo '85,728,70366,70366-70545,698,134002,134002-134181' >> Earfcn_tableV1.txt
+!echo '87,420,70546,70546-70595,410,134182,134182-134231' >> Earfcn_tableV1.txt
+!echo '88,422,70596,70596-70645,412,134232,134232-134281' >> Earfcn_tableV1.txt
+!echo '103,757,70646,70646-70655,787,134282,134282-134291' >> Earfcn_tableV1.txt
+endfunc
+
+function extract_gnode_cells
+ ma gnode_cells $gnode_ldn,ExternalGUtranCell=
+ for $mo in gnode_cells
+  get $mo localCellId > $loc_cell
+  !echo '---------------------------------------------' >> $logToFile
+  !echo 'Local ID       : '$loc_cell >> $logToFile
+  get $mo nRPCI > $nrpci
+  !echo 'nRPCI:         : '$nrpci >> $logToFile
+  get $mo pointAArfcnDl > $pointA
+  nr_low_mid_freq_calc $pointA
+  !echo 'pointAArfcnDl  : '$pointA' value in MHz: '$freq >> $logToFile
+  get $mo gUtranSyncSignalFrequencyRef > $ref1
+  $split_separator = =
+  $ref2 = split($ref1)
+  $split_separator = -
+  $ref3 = split($ref2[3])
+  nr_low_mid_freq_calc $ref3[1]
+  !echo 'SSB            : '$ref3[1]' value in MHz: '$freq >> $logToFile
+  !echo '---------------------------------------------' >> $logToFile
+ done
+ mr gnode_cells
+endfunc
+
+
+function connected_gnbs
+ !echo '***************Connected GNBs*****************' >> $logToFile
+ ma connected_gnb ENodeBFunction=1,GUtraNetwork=1,ExternalGNodeBFunction=
+ for $mo in connected_gnb
+  get $mo ^gNodeBId$ > $gnode_ID
+  $gnode_ldn = ldn($mo)
+  !echo '++++++++++++++++++++ GutranCells under Gnodeb: '$gnode_ID' +++++++++++++++++++++++++'  >> $logToFile
+  extract_gnode_cells
+  !echo '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'  >> $logToFile
+ done
+endfunc
+
+
+function nr_low_mid_freq_calc
+ $freq1 = $1
+ $freq = 5 * $freq1
+ $freq = $freq / 1000
+endfunc
+
+function process_table
+ $temp = $1
+ $split_separator = ,
+ $temp2 = split($temp)
+ 
+ $split_separator = -
+ $temp3 = split($temp2[4])
+ pv $temp3
+ pv $alma
+ pv $arfcn_DL
+ if $arfcn_DL > $temp3[1] && $arfcn_DL < $temp3[2]
+  $find = $temp
+  $split_separator = ,
+  $find1 = split($find) 
+  $band = $find1[1]
+  $f1_dl = $arfcn_DL - $find1[3]
+  $f1_dl = 0.1 * $f1_dl
+  $f1_dl = $f1_dl + $find1[2]
+  $f1_ul = $arfcn_UL - $find1[6]
+  $f1_ul = 0.1 * $f1_ul
+  $f1_ul = $f1_ul + $find1[5]
+ fi
+endfunc
+
+function search_band
+ $lineContent = readfile(Earfcn_tableV1.txt)
+ for $lineNumber = 1 to $nr_of_lines
+  process_table $lineContent[$lineNumber]
+  if $find !~ NOT_FOUND
+   break
+  fi
+ done
+endfunc
+
+function function_lte
+ ma lte_cells ENodeBFunction=1,EUtranCellFDD=
+ for $mo in lte_cells
+  $find = NOT_FOUND
+  get $mo earfcndl > $arfcn_DL 
+  get $mo earfcnul > $arfcn_UL 
+  get $mo eUtranCellFDDId > $cell_name
+  get $mo dlChannelBandwidth > $bw
+  $bw = $bw / 1000
+  get $mo physicalLayerCellId > $pci
+  search_band
+  !echo '***********LTE CELL***************' >> $logToFile
+  !echo 'Cell name : '$cell_name >> $logToFile
+  !echo 'PCI       : '$pci >> $logToFile
+  !echo 'Bandwidth : '$bw' MHz' >> $logToFile
+  !echo 'ArfcnDL   : '$arfcn_DL' value in MHz: '$f1_dl >> $logToFile  
+  !echo 'ArfcnUL   : '$arfcn_UL' value in MHz: '$f1_ul >> $logToFile    
+  !echo 'Cell Band : B-'$band >> $logToFile
+  !echo '**********************************' >> $logToFile
+ done
+endfunc
+
+function function_vdu
+ get GNBDUFunction=  ^gNBId$ > $vdu_gnb
+ !echo '**************** VDU has: '$vdu_gnb' gnbID ******************' >> $logToFile
+ ma vdu_cell GNBDUFunction=1,NRCellDU=
+ for $mo in vdu_cell
+  get $mo ^id$ > $ID
+  get $mo cellLocalId > $cell_local_id
+  get $mo nRPCI > $nRPCI1
+  get $mo arfcndl > $dl
+  nr_low_mid_freq_calc $dl
+  $arfcn_DL = $freq
+  get $mo arfcnUl > $ul
+  nr_low_mid_freq_calc $ul
+  $arfcn_UL = $freq
+  get $mo ssbFrequency > $ssb
+  nr_low_mid_freq_calc $ssb
+  $ssb1 = $freq
+  !echo '**************NR_CELL '$ID' ***********************' >> $logToFile
+  !echo 'cellLocalId   :'$cell_local_id >> $logToFile
+  !echo 'nRPCI value   :'$nRPCI1 >>  $logToFile
+  !echo 'ArfcnDL       : '$dl' value in MHz: '$arfcn_DL  >> $logToFile
+  !echo 'ArfcnUL       : '$ul' value in MHz: '$arfcn_UL  >> $logToFile
+  !echo 'SSB           : '$ssb' value in MHz: '$ssb1  >> $logToFile
+  !echo '********************************************' >> $logToFile
+ done
+endfunc
+
+#####################FUNCTION DECLARATION BLOCKS ENDS HERE ########################################
+
+#Main program starts here
+
+$lineContent = testfile(Earfcn_tableV1.txt)
+if $nr_of_lines = 0
+ create_arfcn_table
+fi
+
+
+lt all
+pr ^ENodeBFunction=
+if $nr_of_mos = 0
+ function_vdu
+else
+ function_lte
+ connected_gnbs
+fi
+ 
+!cat $logToFile
+!rm $logToFile
+
+
+
+
