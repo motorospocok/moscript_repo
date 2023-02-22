@@ -3,9 +3,10 @@
 # Limitations:
 # - Discovery service hardcoded
 # - VDU plmn hardcoded to 262 80
-#2022 december 19 - V1.5 added VDU support 
+#2022 december 19 - V1.5 added VDU support
+#2023 februery 22 - V1.5.1 corrected ESS ID state check
 
-$version = 1.5v
+$version = 1.5.1v
 s+
 #Variable initialization
 $path1 = ~/CloneToYaml/
