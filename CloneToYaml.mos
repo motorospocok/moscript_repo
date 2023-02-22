@@ -648,7 +648,7 @@ function obtain_nr_sector_carrier
   $temp2 = split($temp1)
   $sectorequipmentfunc1 = $temp2[4]
   get $mo essScLocalId > $ess1
-  if $ess1 ~ [0..9]
+  if $ess1 ~ [0-9]
    get $mo essScPairId > $essScPairId1
    get $mo essScLocalId > $essScLocalId1
    get $mo essMbsfnSubframeConfig > $essMbsfnSubframeConfig1
@@ -662,7 +662,7 @@ function obtain_nr_sector_carrier
   !echo '++++++bSChannelBwDL: "'$bSChannelBwDL1'"' >> v1.txt
   !echo '++++++bSChannelBwUL: "'$bSChannelBwUL1'"' >> v1.txt
   !echo '++++++sectorequipmentfunc: "'$sectorequipmentfunc1'"' >> v1.txt
-  if $ess1 ~ [0..9]
+  if $ess1 ~ [0-9]
    !echo '++++++attributes:' >> v1.txt
    !echo '++++++++- name: essScPairId' >> v1.txt
    !echo '++++++++++scheme: ''"'"'"'urn:rdns:com:ericsson:oammodel:ericsson-nrsectorcarrier-vdu-ext'"'"'"' >> v1.txt
