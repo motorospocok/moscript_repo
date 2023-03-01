@@ -3,13 +3,20 @@
 # Limitations:
 # - Discovery service hardcoded
 # - VDU plmn hardcoded to 262 80
-#2022 december 19 - V1.5 added VDU support
-#2023 februery 22 - V1.5.1 corrected ESS ID state check
+#2022 December 19 - V1.5 added VDU support
+#2023 Februery 22 - V1.5.1 corrected ESS ID state check
+#2023 March 1 - V1.6 now supports SA on VDU and new parameters ulAvailableCrbs,dlAvailableCrbs,ssWithRmLteSyncSigPbchEnabled,dftSOfdmPuschEnabled1,dftSOfdmMsg3Enabled
 
-$version = 1.5.1v
+$version = 1.6v
 s+
 #Variable initialization
 $path1 = ~/CloneToYaml/
+
+!if [ ! -d "$path1" ]; then
+!    echo "Directory does not exist, creating directory..."
+!    mkdir "$path1"
+!fi
+
 get 0 userLabel > $file1
 
 function obtain_rilinks_from_RGW_to_RU
@@ -592,7 +599,10 @@ function obtain_nrcelldu
   get $mo drxLongCycle > $drxLongCycle1
   get $mo drxOnDurationTimer > $drxOnDurationTimer1
   get $mo pdschInDmrsSymEnabled > $pdschInDmrsSymEnabled1
-  
+  get $mo dftSOfdmPuschEnabled > $dftSOfdmPuschEnabled1
+  get $mo dftSOfdmMsg3Enabled > $dftSOfdmMsg3Enabled1
+  get $mo ssWithRmLteSyncSigPbchEnabled > $ssWithRmLteSyncSigPbchEnabled1
+  get $mo sib1Enable > $sib1Enable1
   !echo '++++- id: "'$id1'"' >> v1.txt
   !echo '++++++sectorCarrier: "'$sectorCarrier1'"' >> v1.txt
   !echo '++++++ssbSubCarrierSpacing: "'$ssbSubCarrierSpacing1'"' >> v1.txt
@@ -607,6 +617,22 @@ function obtain_nrcelldu
   !echo '++++++bSChannelBwUL: "'$bSChannelBwUL1'"' >> v1.txt
   !echo '++++++nRPCI: "'$nRPCI1'"' >> v1.txt
   !echo '++++++bWPRef: ["'$bWPRef11'","'$bWPRef22'"]' >> v1.txt
+  
+#SA support added here 
+
+  if $sib1Enable1 = true
+   !echo '++++++sib1Enable: true' >> v1.txt
+   get $mo srbRLCRef > $srbRLCRef1
+   $split_separator = =
+   $temp = split($srbRLCRef1)
+   $srbRLCRef1 = $temp[6]
+   !echo '++++++srbRLCRef: ["'$srbRLCRef1'"]' >> v1.txt
+   get $mo pLMNInfoList > $pLMNInfoList1
+   !echo '++++++sd: "'$pLMNInfoList1[sd]'"' >> v1.txt
+   !echo '++++++sst: "'$pLMNInfoList1[sst]'"' >> v1.txt
+  fi
+      
+  
   !echo '++++++endcUlLegSwitch: "'$endcUlLegSwitch1'"' >> v1.txt
   !echo '++++++endcDlLegSwitch: "'$endcDlLegSwitch1'"' >> v1.txt
   !echo '++++++endcDlNrLowQualThresh: '$endcDlNrLowQualThresh1 >> v1.txt
@@ -619,12 +645,28 @@ function obtain_nrcelldu
   !echo '++++++drxInactivityTimer: '$drxInactivityTimer1 >> v1.txt
   !echo '++++++drxLongCycle: '$drxLongCycle1 >> v1.txt
   !echo '++++++drxOnDurationTimer: '$drxOnDurationTimer1 >> v1.txt
+  
   if $pdschInDmrsSymEnabled1 = true
    !echo '++++++attributes:' >> v1.txt
    !echo '++++++++- name: "pdschInDmrsSymEnabled"' >> v1.txt
    !echo '++++++++++value: "true"' >> v1.txt 
   fi
+  if $dftSOfdmPuschEnabled1 = true
+   !echo '++++++++- name: "dftSOfdmPuschEnabled"' >> v1.txt
+   !echo '++++++++++value: "true"' >> v1.txt 
+  fi
+  if $dftSOfdmMsg3Enabled1 = true
+   !echo '++++++++- name: "dftSOfdmMsg3Enabled"' >> v1.txt
+   !echo '++++++++++value: "true"' >> v1.txt 
+  fi
+  if $ssWithRmLteSyncSigPbchEnabled1 = true
+   !echo '++++++++- name: "ssWithRmLteSyncSigPbchEnabled"' >> v1.txt
+   !echo '++++++++++value: "true"' >> v1.txt 
+  fi
+  
  done
+ 
+ 
 
 endfunc
 
@@ -675,6 +717,20 @@ function obtain_nr_sector_carrier
    !echo '++++++++++scheme: ''"'"'"'urn:rdns:com:ericsson:oammodel:ericsson-nrsectorcarrier-vdu-ext'"'"'"' >> v1.txt
    !echo '++++++++++value: ''"'$essMbsfnSubframeConfig1'"' >> v1.txt
   fi
+  
+  get $mo dlAvailableCrbs > $dlAvailableCrbs1
+  if $dlAvailableCrbs1 ~ [1-9]
+   !echo '++++++++- name: dlAvailableCrbs' >> v1.txt
+   !echo '++++++++++scheme: ''"'"'"'urn:rdns:com:ericsson:oammodel:ericsson-nrsectorcarrier-vdu-ext'"'"'"' >> v1.txt
+   !echo '++++++++++value: ''"'$dlAvailableCrbs1'"' >> v1.txt
+  fi
+  get $mo ulAvailableCrbs > $ulAvailableCrbs1
+  if $ulAvailableCrbs1 ~ [1-9]
+   !echo '++++++++- name: ulAvailableCrbs' >> v1.txt
+   !echo '++++++++++scheme: ''"'"'"'urn:rdns:com:ericsson:oammodel:ericsson-nrsectorcarrier-vdu-ext'"'"'"' >> v1.txt
+   !echo '++++++++++value: ''"'$ulAvailableCrbs1'"' >> v1.txt
+  fi
+  
  done
 endfunc
  
