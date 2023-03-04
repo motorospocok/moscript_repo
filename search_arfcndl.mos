@@ -1,8 +1,19 @@
 #This scripts converts the LTE and NR freqs in a msrbs or in a VDU
-#This script creates the following file: Earfcn_tableV1.txt
-#V1.0 - Supports multiple gnb in msrbs - 2023 Feb 22
+#Same directory MUST have remove_data_lines.sh
+#Script written by ethtoja
 
-$logToFile = ~/RealMenDrinkOnlyEspresso.txt
+#This script needs the following file to run: Earfcn_tableV1.txt
+#V1.0 - Supports multiple gnb in msrbs - 2023 Feb 22
+#V1.1 - Supports argument db to create database 2023 Marc 2
+#V1.2 - Supports report creation and added bash script remove_data_lines.sh to secure refresh datbaase function
+
+
+$logToFile = RealMenDrinkOnlyEspresso.txt
+$VDU_database = ~/VDU_database.csv
+$enb_database = ~/ENB_database.csv
+$VCU_CP_database = ~/VCU_CP_database.csv
+
+$report_path = /home/motor/
 
 #####################FUNCTION DECLARATION BLOCKS STARTS HERE ########################################
 
@@ -81,22 +92,28 @@ function extract_gnode_cells
  for $mo in gnode_cells
   get $mo localCellId > $loc_cell
   !echo '---------------------------------------------' >> $logToFile
-  !echo 'Local ID       : '$loc_cell >> $logToFile
+  !echo 'Local ID ------------------------: '$loc_cell >> $logToFile
   get $mo nRPCI > $nrpci
-  !echo 'nRPCI:         : '$nrpci >> $logToFile
+  !echo 'nRPCI ---------------------------: '$nrpci >> $logToFile
   get $mo pointAArfcnDl > $pointA
   nr_low_mid_freq_calc $pointA
-  !echo 'pointAArfcnDl  : '$pointA' value in MHz: '$freq >> $logToFile
+  $pfreq1 = $freq
+  !echo 'pointAArfcnDl -------------------: '$pointA' value in MHz: '$freq >> $logToFile
   get $mo gUtranSyncSignalFrequencyRef > $ref1
   $split_separator = =
   $ref2 = split($ref1)
   $split_separator = -
   $ref3 = split($ref2[3])
-  nr_low_mid_freq_calc $ref3[1]
-  !echo 'SSB            : '$ref3[1]' value in MHz: '$freq >> $logToFile
+  !echo 'SSB -----------------------------: '$ref3[1]' value in MHz: '$freq >> $logToFile
   !echo '---------------------------------------------' >> $logToFile
+  if $create_DB = yes
+   !echo $rbs_name';NR;'$gnode_ID';'$loc_cell';'$nrpci';'$pointA';'$pfreq1';'$ref3[1]';'$freq >> $enb_database
+  fi 
  done
  mr gnode_cells
+  if $create_DB = yes
+   !echo '** DATA BASE FILE WRITTEN ***' >> $logToFile
+  fi
 endfunc
 
 
@@ -126,9 +143,6 @@ function process_table
  
  $split_separator = -
  $temp3 = split($temp2[4])
- pv $temp3
- pv $alma
- pv $arfcn_DL
  if $arfcn_DL > $temp3[1] && $arfcn_DL < $temp3[2]
   $find = $temp
   $split_separator = ,
@@ -154,30 +168,89 @@ function search_band
 endfunc
 
 function function_lte
+
+ $nodetype = msrbs
+ get ManagedElement=1 userlabel > $rbs_name
+ $split_separator = -
+ $temp = split($rbs_name)
+ $rbs_name = $temp[1]
+ $report_name = $rbs_name
+ if $create_DB = yes
+  !./remove_data_lines.sh  $enb_database $rbs_name
+ fi
+ get ENodeBFunction=1 eNBId > $enodeB_ID
+ 
+ $lineContent = testfile(Earfcn_tableV1.txt)
+ if $nr_of_lines = 0
+  create_arfcn_table
+ fi
+ !echo '**************** msrbs '$rbs_name' has: '$enodeB_ID' eNodeBId ******************' >> $logToFile
  ma lte_cells ENodeBFunction=1,EUtranCellFDD=
  for $mo in lte_cells
   $find = NOT_FOUND
+  get $mo ^cellId$ > $cell_id1
   get $mo earfcndl > $arfcn_DL 
   get $mo earfcnul > $arfcn_UL 
   get $mo eUtranCellFDDId > $cell_name
   get $mo dlChannelBandwidth > $bw
   $bw = $bw / 1000
   get $mo physicalLayerCellId > $pci
+  get $mo sectorCarrierRef > $sectorCarrierRef1
+  $split_separator = =
+  $temp = split($sectorCarrierRef1)
+  $sectorCarrierRef1 = $temp[5]
+  get ENodeBFunction=1,SectorCarrier=$sectorCarrierRef1 essScLocalId > $essScLocalId1
+  get ENodeBFunction=1,SectorCarrier=$sectorCarrierRef1 essScPairId > $essScPairId1
+  $ess_flag = no
+  if $essScLocalId1 ~ [1-9]
+   $ess_flag = yes
+  else
+   $essScLocalId1 = NO
+   $essScPairId1 = NO
+  fi
+   
+  get ENodeBFunction=1,SectorCarrier=$sectorCarrierRef1 sectorFunctionRef > $sectorEquipmentFunctionRef1
+  $temp = split($sectorEquipmentFunctionRef1)
+  $sectorEquipmentFunctionRef1 = $temp[2]
+  
   search_band
-  !echo '***********LTE CELL***************' >> $logToFile
-  !echo 'Cell name : '$cell_name >> $logToFile
-  !echo 'PCI       : '$pci >> $logToFile
-  !echo 'Bandwidth : '$bw' MHz' >> $logToFile
-  !echo 'ArfcnDL   : '$arfcn_DL' value in MHz: '$f1_dl >> $logToFile  
-  !echo 'ArfcnUL   : '$arfcn_UL' value in MHz: '$f1_ul >> $logToFile    
-  !echo 'Cell Band : B-'$band >> $logToFile
+  !echo '*********** LTE CELL ***************' >> $logToFile
+  !echo 'Cell name -----------------------: '$cell_name >> $logToFile
+  !echo 'Cell ID -------------------------: '$cell_id1 >> $logToFile
+  !echo 'PCI -----------------------------: '$pci >> $logToFile
+  !echo 'Bandwidth -----------------------: '$bw' MHz' >> $logToFile
+  !echo 'ArfcnDL -------------------------: '$arfcn_DL' value in MHz: '$f1_dl >> $logToFile  
+  !echo 'ArfcnUL -------------------------: '$arfcn_UL' value in MHz: '$f1_ul >> $logToFile    
+  !echo 'Cell Band -----------------------: B-'$band >> $logToFile
+  if $ess_flag = yes
+   !echo 'ESS configured -: YES'  >> $logToFile
+   !echo 'essScLocalId --------------------: '$essScLocalId1  >> $logToFile
+   !echo 'essScPairId ---------------------: '$essScPairId1  >> $logToFile
+  else
+   !echo 'ESS configured -: NO'  >> $logToFile
+  fi
+  !echo 'Cell on sectorEquipmentFunction -: '$sectorEquipmentFunctionRef1 >> $logToFile
   !echo '**********************************' >> $logToFile
+  if $create_DB = yes
+   !echo $rbs_name';LTE;'$enodeB_ID';'$cell_name';'$cell_id1';'$pci';'$bw';'$arfcn_DL';'$f1_dl';'$arfcn_UL';'$f1_ul';'$band';'$ess_flag';'$essScLocalId1';'$essScPairId1';'$sectorEquipmentFunctionRef1 >> $enb_database
+  fi 
  done
 endfunc
 
 function function_vdu
+ $nodetype = VDU
  get GNBDUFunction=  ^gNBId$ > $vdu_gnb
- !echo '**************** VDU has: '$vdu_gnb' gnbID ******************' >> $logToFile
+ get ManagedElement=1 userlabel > $vdu_name
+ $split_separator = -
+ $temp = split($vdu_name)
+ $vdu_name = $temp[1]
+
+ if $create_DB = yes
+  !./remove_data_lines.sh $VDU_database $vdu_name
+ fi
+
+ $report_name = $vdu_name
+ !echo '**************** VDU '$vdu_name' has: '$vdu_gnb' gnbID ******************' >> $logToFile
  ma vdu_cell GNBDUFunction=1,NRCellDU=
  for $mo in vdu_cell
   get $mo ^id$ > $ID
@@ -192,38 +265,181 @@ function function_vdu
   get $mo ssbFrequency > $ssb
   nr_low_mid_freq_calc $ssb
   $ssb1 = $freq
+  get $mo nRSectorCarrierRef > $SectorCarrier1
+  $split_separator = =
+  $temp = split($SectorCarrier1)
+  $SectorCarrier1 = $temp[6]
+  get $mo bSChannelBwDL > $bandwidth1
+  get GNBDUFunction=1,NRSectorCarrier=$SectorCarrier1 essScLocalId > $essScLocalId1  
+  get GNBDUFunction=1,NRSectorCarrier=$SectorCarrier1 sectorEquipmentFunctionRef > $sectorEquipmentFunctionRef1
+  
+  $temp = split($sectorEquipmentFunctionRef1)
+  $sectorEquipmentFunctionRef1 = $temp[4]
   !echo '**************NR_CELL '$ID' ***********************' >> $logToFile
-  !echo 'cellLocalId   :'$cell_local_id >> $logToFile
-  !echo 'nRPCI value   :'$nRPCI1 >>  $logToFile
-  !echo 'ArfcnDL       : '$dl' value in MHz: '$arfcn_DL  >> $logToFile
-  !echo 'ArfcnUL       : '$ul' value in MHz: '$arfcn_UL  >> $logToFile
-  !echo 'SSB           : '$ssb' value in MHz: '$ssb1  >> $logToFile
+  !echo 'cellLocalId -----: '$cell_local_id >> $logToFile
+  !echo 'nRPCI value -----: '$nRPCI1 >>  $logToFile
+  !echo 'ArfcnDL ---------: '$dl' value in MHz: '$arfcn_DL  >> $logToFile
+  !echo 'ArfcnUL ---------: '$ul' value in MHz: '$arfcn_UL  >> $logToFile
+  !echo 'SSB -------------: '$ssb' value in MHz: '$ssb1  >> $logToFile
+  !echo 'Bandwitdh -------: '$bandwidth1 'MHz' >> $logToFile
+  !echo 'SectorCarrier ---: '$SectorCarrier1   >> $logToFile
+   
+   if $essScLocalId1 ~ [1-9]
+    $essflag = YES 
+    get GNBDUFunction=1,NRSectorCarrier=$SectorCarrier1 essScPairId > $essScPairId1
+    !echo 'ESS configured --: '$essflag >> $logToFile
+    !echo 'ESS essScLocalId :'$essScLocalId1 >> $logToFile
+    !echo 'ESS essScPairId -:'$essScPairId1 >> $logToFile
+   else
+    $essflag = NO
+    !echo 'ESS configured --: '$essflag >> $logToFile
+    $essScLocalId1 = no
+    $essScPairId1 = no
+   fi
+   !echo 'Sector in msrbs --: sectorEquipmentFunction='$sectorEquipmentFunctionRef1 >> $logToFile
   !echo '********************************************' >> $logToFile
+  if $create_DB = yes
+   !echo $vdu_name';'$vdu_gnb';'$ID';'$cell_local_id';'$nRPCI1';'$dl';'$arfcn_DL';'$ul';'$arfcn_UL';'$ssb';'$ssb1';'$bandwidth1';'$SectorCarrier1';'$essflag';'$essScLocalId1';'$essScPairId1';'$sectorEquipmentFunctionRef1 >> $VDU_database
+  fi
+ done
+  if $create_DB = yes
+   !echo '** DATA BASE FILE WRITTEN ***' >> $logToFile
+  fi
+endfunc
+
+function function_vcu
+ $nodetype = VCU_CP
+ get GNBCUCPFunction=1 ^gNBId$ > $vcu_gnb
+ get ManagedElement=1 userlabel > $vcu_name
+ $split_separator = -
+ $temp = split($vcu_name)
+ $vcu_name = $temp[1]-$temp[2]
+ $report_name = $vcu_name
+ if $create_DB = yes
+  !./remove_data_lines.sh $VCU_CP_database $vcu_name
+ fi
+ !echo '**************** VCU '$vcu_name' has: '$vcu_gnb' gnbID ******************' >> $logToFile
+ !echo '-------------------------------------------------------'  >> $logToFile
+ ma vcu_cell GNBCUCPFunction=1,NRCellCU=
+ for $mo in vcu_cell
+  get $mo ^id$ > $ID
+  get $mo cellLocalId > $cell_local_id
+  !echo 'NrCell ID:--------------------: '$ID >> $logToFile
+  !echo 'cellLocalId ------------------: '$cell_local_id >> $logToFile
+  !echo ' ' >> $logToFile
+  if $create_DB = yes
+   !echo $vcu_name';internal;'$vcu_gnb';'$ID';'$cell_local_id >> $VCU_CP_database
+  fi
+ done
+ !echo '-------------------------------------------------------'  >> $logToFile
+endfunc
+
+function vcu_ext_gnb_cells
+ ma ext_cells $1,ExternalNRCellCU=
+ for $mo in ext_cells
+  get $mo ^id$ > $ID
+  get $mo cellLocalId > $cell_local_id
+  get $mo nRPCI > $nRPCI1
+  !echo 'Cell name --------------------: '$ID  >> $logToFile
+  !echo 'Cell local id ----------------: '$cell_local_id >> $logToFile
+  !echo 'nRPCI ------------------------: '$nRPCI1  >> $logToFile
+  !echo '------------------------------------------------------' >> $logToFile
+  if $create_DB = yes
+   !echo $vcu_name';EXTERNAL_GNB;'$gNBId1';'$ID';'$cell_local_id';'$nRPCI1 >> $VCU_CP_database
+  fi
+ done
+  mr ext_cells
+endfunc
+
+function function_ext_nrcell
+ !echo '******Externally GNB defintions*****' >> $logToFile
+ ma ext_gnb ExternalGNBCUCPFunction=
+ for $mo in ext_gnb
+  get $mo ^gNBId$ > $gNBId1
+  !echo 'Connected external GNBID ---- : '$gNBId1 >> $logToFile
+  !echo '------------------------------------------------------' >> $logToFile
+  $temp = rdn($mo)
+  vcu_ext_gnb_cells $temp
+  !echo '******************************************************' >> $logToFile
+ done
+endfunc
+
+function vcu_ext_enodeb_cells
+
+ma ext_cells $1,ExternalEUtranCell=
+ for $mo in ext_cells
+  get $mo ^id$ > $ID
+  get $mo cellLocalId > $cell_local_id
+  get $mo PCI > $PCI1
+  !echo 'Cell name -------------------: '$ID  >> $logToFile
+  !echo 'Cell local id ---------------: '$cell_local_id >> $logToFile
+  !echo 'PCI -------------------------: '$PCI1 >> $logToFile
+  !echo '------------------------------------------------------' >> $logToFile
+  if $create_DB = yes
+   !echo $vcu_name';EXTERNAL_eNodeB;'$eNBId1';'$ID';'$cell_local_id';'$PCI1 >> $VCU_CP_database
+  fi
+ done
+ mr ext_cells
+endfunc
+ 
+function function_ext_enodeb
+ !echo '******Externally ENB definitions *****' >> $logToFile
+ ma ext_enodeb ,ExternalENBFunction=
+  for $mo in ext_enodeb
+  get $mo ^eNBId$ > $eNBId1
+  !echo 'Connected external EnodeB ID ---- : '$eNBId1 >> $logToFile
+  !echo '------------------------------------------------------' >> $logToFile
+  $temp = rdn($mo)
+  vcu_ext_enodeb_cells $temp
+  !echo '******************************************************' >> $logToFile
  done
 endfunc
 
 #####################FUNCTION DECLARATION BLOCKS ENDS HERE ########################################
 
 #Main program starts here
+lt all
 
-$lineContent = testfile(Earfcn_tableV1.txt)
-if $nr_of_lines = 0
- create_arfcn_table
+if $1 = db
+ $create_DB = yes
+else
+ $create_DB = no
 fi
 
-
-lt all
+$msrbs_type = no
 pr ^ENodeBFunction=
-if $nr_of_mos = 0
- function_vdu
-else
+if $nr_of_mos > 0
+ $msrbs_type = yes
+ $temp = readinput(It seems you are logged into a msrbs - press enter)
  function_lte
  connected_gnbs
 fi
+
+pr NRSectorCarrier=
+if $nr_of_mos > 0 && $msrbs_type = no
+ $temp = readinput(It seems you are logged into a VDU - press enter)
+  function_vdu
+fi
+ 
+pr NrCellCu=
+
+if $nr_of_mos > 0 && $msrbs_type = no
+ $temp = readinput(It seems you are logged into a VCU - press enter)
+  function_vcu
+  function_ext_nrcell
+  function_ext_enodeb
+fi
  
 !cat $logToFile
+
+$temp = readinput(Do you want to create report file ? )
+$date1 = `date "+%Y-%m-%d %H:%M:%S"`
+$date2 = `date "+%Y-%m-%d_%H-%M-%S"`
+if $temp ~ Y || $temp ~ y
+ !echo 'This is a report about a data collection at '$date1 >> temp1.txt
+ !cat temp1.txt >> $report_path$report_name_$date2.ArfcnReport
+ !cat $logToFile >> $report_path$report_name_$date2.ArfcnReport
+ !rm temp1.txt
+fi
+
 !rm $logToFile
-
-
-
-
