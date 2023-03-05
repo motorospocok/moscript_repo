@@ -1,0 +1,308 @@
+#This script written for to visalize VCU cell informaton and connnection to msrbs and VDU 
+#The script uses databases. These dabases can be created with search_arfcndl.mos script
+#V1.0 supports listing of VCU - VDU pars with freq paramaters, external GNB cells and EnodeBcells - 2023 March 5.
+
+$VDU_database = ~/VDU_database.csv
+$enb_database = ~/ENB_database.csv
+$logToFile = RealMenDrinkOnlyEspresso.txt
+$report_path = /home/motor/
+
+function fetch_VDU_cell_info
+
+ !echo ' ' >> $logToFile
+ !echo 'Function pairs VCU-VDU: '$vcu_name'-+-'$temp[1] >> $logToFile
+ !echo 'NrCellCU='$id1'-+-NrCellDU='$temp[3] >> $logToFile
+ !echo 'nRPCI -----------:'$temp[5]  >> $logToFile
+ !echo 'Arfcn DL --------:'$temp[6]'---'$temp[7]' MHz' >> $logToFile
+ !echo 'Arfcn UL --------:'$temp[8]'---'$temp[9]' MHz' >> $logToFile
+ !echo 'SSB -------------:'$temp[10]'---'$temp[11]' MHz' >> $logToFile
+ !echo 'Bandwidth -------:'$temp[12]' Mhz' >> $logToFile
+ !echo 'SectorCarrier ---:'$temp[13] >> $logToFile
+ if $temp[14] = YES
+  !echo 'essScLocalId ----:'$temp[15] >> $logToFile
+  !echo 'essScPairId -----:'$temp[16] >> $logToFile
+ fi
+ !echo 'SectorEquipmentFunction='$temp[17] >> $logToFile
+ 
+# $vdu_name';'$vdu_gnb';'$ID';'$cell_local_id';'$nRPCI1';'$dl';'$arfcn_DL';'$ul';'$arfcn_UL';'$ssb';'$ssb1';'$bandwidth1';'$SectorCarrier1';'$essflag';'$essScLocalId1';'$essScPairId1';'$sectorEquipmentFunctionRef1
+endfunc
+
+function search_VDU_cell 
+ $gnbid2 = $1
+ $cellLocalId2 = $2 
+ 
+ $found = false
+ $table = readfile($VDU_database)
+ $split_separator = ;
+ for $lineNumber = 1 to $nr_of_lines
+  $temp = split($table[$lineNumber])  
+  if $temp[2] = $gnbid2 && $temp[4] = $cellLocalId2 && $print_info = yes
+   fetch_VDU_cell_info
+   $found = true
+   break
+  fi
+  if $temp[2] = $gnbid2 && $temp[4] = $cellLocalId2 && $print_info = no   
+   $found = true
+   break
+  fi
+ done
+ if $found = false
+ 
+  #Here needs to implement that to check the enb for the NrCellDU as well
+ 
+  !echo ' ' >> $logToFile
+  !echo ' ********************** WARNING DANGER DEATH ARMAGEDDON ********************************'   >> $logToFile
+  !echo 'NrCellCu='$id1' is not found in the VDU database. It is not defined there or needs database refresh on specific VDU !!!'  >> $logToFile
+  !echo ' ********************** WARNING DANGER DEATH ARMAGEDDON ********************************'   >> $logToFile
+  !echo ' ' >> $logToFile
+ fi
+endfunc
+
+function nrcellcu_nrcellvdu
+ get ManagedElement=1 userlabel > $vcu_name
+ $split_separator = -
+ $temp = split($vcu_name)
+ $vcu_name = $temp[1]-$temp[2]
+
+ get GNBCUCPFunction=1 ^gnBId$ > $gnbid1
+ !echo '********** Cloud RAN VCU - VDU connections OWN GNBID '$gnbid1 '*************'  >> $logToFile
+ ma NrCell_group GNBCUCPFunction=1,NRCellCU=
+ pr NrCell_group
+ if $nr_of_mos = 0
+  !echo 'Hey, You! This VCU seems to be empty. Do some work on it and come back then, until that keep the change you filthy animal!' >> $logToFile
+  !echo 'Copyright Home Alone'  >> $logToFile
+ else
+  for $mo in NrCell_group
+   get $mo ^id$ > $id1
+   get $mo cellLocalId > $cellLocalId1
+   $print_info = yes
+   search_VDU_cell $gnbid1 $cellLocalId1 $print_info
+  done
+ fi
+endfunc
+
+function fetch_extgnb_cell_info
+
+!echo ' ' >> $logToFile
+ !echo 'Function pairs VCU-mrbs: '$vcu_name'-+-'$temp[1]' with gnodeb '$temp[3] >> $logToFile
+ !echo ' '  >> $logToFile
+ !echo 'NrCellCU='$id1'-+-NrCellDU='$temp[4] >> $logToFile
+ !echo 'nRPCI -----------:'$temp[5]  >> $logToFile
+ !echo 'PointADL --------:'$temp[6]'---'$temp[7]' MHz' >> $logToFile
+ !echo 'SSB -------------:'$temp[8]'---'$temp[9]' MHz' >> $logToFile
+ #!echo 'SSB -------------:'$temp[10]'---'$temp[11]' MHz' >> $logToFile
+ #!echo 'Bandwidth -------:'$temp[12]' Mhz' >> $logToFile
+ #!echo 'SectorCarrier ---:'$temp[13] >> $logToFile
+ #if $temp[14] = YES
+ # !echo 'essScLocalId ----:'$temp[15] >> $logToFile
+ # !echo 'essScPairId -----:'$temp[16] >> $logToFile
+ #fi
+ #!echo 'SectorEquipmentFunction='$temp[17] >> $logToFile
+ 
+# $vdu_name';'$vdu_gnb';'$ID';'$cell_local_id';'$nRPCI1';'$dl';'$arfcn_DL';'$ul';'$arfcn_UL';'$ssb';'$ssb1';'$bandwidth1';'$SectorCarrier1';'$essflag';'$essScLocalId1';'$essScPairId1';'$sectorEquipmentFunctionRef1
+endfunc
+
+
+function search_ext_GNB_cell
+ $gnbid2 = $1
+ $cellLocalId2 = $2 
+ 
+ $found = false
+ $table = readfile($enb_database)
+ $split_separator = ;
+ for $lineNumber = 1 to $nr_of_lines
+  $temp = split($table[$lineNumber])  
+  if $temp[3] = $gnbid2 && $temp[4] = $cellLocalId2 && $print_info = yes
+   fetch_extgnb_cell_info
+   $found = true
+   break
+  fi
+  if $temp[2] = $gnbid2 && $temp[4] = $cellLocalId2 && $print_info = no   
+   $found = true
+   break
+  fi
+ done
+ if $found = false
+ 
+  #Here needs to implement that to check the enb for the NrCellDU as well
+ 
+  !echo ' ' >> $logToFile
+  !echo ' ********************** I AM SO SORRY ********************************'   >> $logToFile
+  !echo 'NrCellCu='$id1' is not found in any msrbs. It is not defined there or needs database refresh on msrbs !!!'  >> $logToFile
+  !echo ' ********************** I AM SO SORRY ********************************'   >> $logToFile
+  !echo ' ' >> $logToFile
+ fi
+endfunc
+
+function search_ext_gnodecell
+ ma ext_gnb_cell $temp,ExternalNRCellCU=
+ pr ext_gnb_cell
+ if $nr_of_mos = 0
+  !echo 'No external NrCellCU defined here' >> $logToFile  
+ else
+  for $mo in ext_gnb_cell
+   get $mo ^id$ > $id1
+   get $mo cellLocalId > $cellLocalId1
+   $print_info = yes
+   search_ext_GNB_cell $gnbid1 $cellLocalId1 $print_info
+  done
+ fi
+endfunc
+ 
+function external_nrcellcu
+ !echo ' ' >> $logToFile
+ !echo '********** Cloud RAN VCU - Ext VCU connections *************'  >> $logToFile
+ ma extgnb GNBCUCPFunction=1,NRNetwork=1,ExternalGNBCUCPFunction=
+ pr extgnb
+ if $nr_of_mos = 0
+  !echo 'No external GNodeB is defined here' >> $logToFile
+  else
+  for $mo in extgnb
+   get $mo ^gNBId$ > $gnbid1
+   $temp = rdn($mo)
+   search_ext_gnodecell
+  done
+ fi
+endfunc
+
+function fetch_enodeb_cell_info
+ !echo ' ' >> $logToFile
+ !echo 'Function pairs VCU-mrbs: '$vcu_name'-+-'$temp[1]' with enodeBId '$temp[3] >> $logToFile
+ !echo ' '  >> $logToFile
+ !echo 'EutranCellFdd='$temp[4] >> $logToFile
+ !echo 'CellId ----------:'$temp[5] >> $logToFile
+ !echo 'PCI -------------:'$temp[6] >> $logToFile
+ !echo 'Tracking Area----:'$temp[7] >> $logToFile
+ !echo 'Bandwidth -------:'$temp[8] >> $logToFile
+ !echo 'ArfcnDL ---------:'$temp[9]'-+-'$temp[10]' MHz' >> $logToFile
+ !echo 'ArfcnUL ---------:'$temp[11]'-+-'$temp[12]' MHz' >> $logToFile
+ !echo 'Band ------------: B'$temp[13] >> $logToFile
+ if $temp[14] = yes
+  !echo 'essScLocalId ----:'$temp[15] >> $logToFile
+  !echo 'essScPairId -----:'$temp[16] >> $logToFile
+ fi
+ !echo 'SectorEquipmentFunction='$temp[17] >> $logToFile
+ !echo ' ' >> $logToFile
+endfunc
+
+function search_ext_enodeb_cell2 
+ $eNBId2 = $1
+ $cellLocalId2 = $2 
+ $pci2 = $3
+ $found = false
+ $table = readfile($enb_database)
+ $split_separator = ;
+ for $lineNumber = 1 to $nr_of_lines
+  $temp = split($table[$lineNumber])  
+  if $temp[3] = $eNBId2 && $temp[5] = $cellLocalId2 && $pci2 = $temp[6] && $print_info = yes
+   fetch_enodeb_cell_info
+   $found = true
+   break
+  fi
+  if $temp[3] = $eNBId2 && $temp[5] = $cellLocalId2 && $pci2 = $temp[6] && $print_info = no   
+   $found = true
+   break
+  fi
+ done
+ if $found = false
+ 
+  #Here needs to implement that to check the enb for the NrCellDU as well
+ 
+  !echo ' ' >> $logToFile
+  !echo ' ********************** I AM SO SORRY ********************************'   >> $logToFile
+  !echo 'NrCellCu='$id1' is not found in any msrbs. It is not defined there or needs database refresh on msrbs !!!'  >> $logToFile
+  !echo ' ********************** I AM SO SORRY ********************************'   >> $logToFile
+  !echo ' ' >> $logToFile
+ fi
+endfunc
+
+function search_ext_enodeb_cell
+ ma enodeb_cell $temp1,ExternalEUtranCell=
+ pr enodeb_cell
+ if $nr_of_mos = 0
+  !echo 'We have msrbs '$temp[1]'as an ExternalENBFunction - but no cells is defined in the VCU'
+ else
+  for $mo in enodeb_cell
+   get $mo ^id$ > $id1
+   get $mo cellLocalId > $cellLocalId1
+   get $mo pci > $pci1
+   $print_info = yes
+   search_ext_enodeb_cell2 $eNBId1 $cellLocalId1 $pci1 $print_info
+  done
+ fi
+endfunc
+
+
+function search_ext_enodeb
+ $found = false
+ $table = readfile($enb_database)
+ $split_separator = ;
+ for $lineNumber = 1 to $nr_of_lines
+  $temp = split($table[$lineNumber])  
+  if $temp[3] = $eNBId1   
+   $found = true
+  fi
+ done
+ if $found = false
+ 
+  #Here needs to implement that to check the enb for the NrCellDU as well
+ 
+  !echo ' ' >> $logToFile
+  !echo ' ********************** I AM SO SORRY ********************************'   >> $logToFile
+  !echo 'The connected ENB is not found in the database refresh msrbs database !!!'  >> $logToFile
+  !echo ' ********************** I AM SO SORRY ********************************'   >> $logToFile
+  !echo ' ' >> $logToFile
+ else
+   search_ext_enodeb_cell
+ fi
+endfunc
+
+function external_enb
+ !echo ' ' >> $logToFile
+ !echo '********** Cloud RAN VCU - Ext enodeb msrbs connections *************'  >> $logToFile
+ ma ext_enb EUtraNetwork=1,ExternalENBFunction=
+ pr ext_enb
+ if $nr_of_mos = 0
+  !echo 'No external enodeb is defined here' >> $logToFile
+  else
+  for $mo in ext_enb
+   get $mo ^eNBId$ > $eNBId1
+   $temp1 = rdn($mo)
+   search_ext_enodeb
+  done
+ fi
+endfunc
+
+##### Main program starts below #######
+lt all
+$print_info = no
+
+get ManagedElement=1 userlabel > $vcu_name
+$split_separator = -
+$temp = split($vcu_name)
+$vcu_name = $temp[1]-$temp[2]
+
+nrcellcu_nrcellvdu
+external_nrcellcu
+external_enb
+
+mr NrCell_group
+mr ext_gnb_cell
+mr extgnb
+mr nodeb_cell
+mr ext_enb
+
+!cat $logToFile
+
+$temp = readinput(Do you want to create report file ? )
+$date1 = `date "+%Y-%m-%d %H:%M:%S"`
+$date2 = `date "+%Y-%m-%d_%H-%M-%S"`
+if $temp ~ Y || $temp ~ y
+ !echo 'This is a report about a data collection at '$date1 >> temp1.txt
+ !cat temp1.txt >> $report_path$vcu_name_$date2.VCUReport
+ !cat $logToFile >> $report_path$vcu_name_$date2.VCUReport
+ !rm temp1.txt
+fi
+
+
+!rm $logToFile

@@ -194,7 +194,8 @@ function function_lte
   get $mo eUtranCellFDDId > $cell_name
   get $mo dlChannelBandwidth > $bw
   $bw = $bw / 1000
-  get $mo physicalLayerCellId > $pci
+  get $mo physicalLayerCellId$ > $pci
+  get $mo ^tac$ > $tac1
   get $mo sectorCarrierRef > $sectorCarrierRef1
   $split_separator = =
   $temp = split($sectorCarrierRef1)
@@ -218,6 +219,7 @@ function function_lte
   !echo 'Cell name -----------------------: '$cell_name >> $logToFile
   !echo 'Cell ID -------------------------: '$cell_id1 >> $logToFile
   !echo 'PCI -----------------------------: '$pci >> $logToFile
+  !echo 'Tracking Area -------------------: '$tac1  >> $logToFile
   !echo 'Bandwidth -----------------------: '$bw' MHz' >> $logToFile
   !echo 'ArfcnDL -------------------------: '$arfcn_DL' value in MHz: '$f1_dl >> $logToFile  
   !echo 'ArfcnUL -------------------------: '$arfcn_UL' value in MHz: '$f1_ul >> $logToFile    
@@ -232,7 +234,7 @@ function function_lte
   !echo 'Cell on sectorEquipmentFunction -: '$sectorEquipmentFunctionRef1 >> $logToFile
   !echo '**********************************' >> $logToFile
   if $create_DB = yes
-   !echo $rbs_name';LTE;'$enodeB_ID';'$cell_name';'$cell_id1';'$pci';'$bw';'$arfcn_DL';'$f1_dl';'$arfcn_UL';'$f1_ul';'$band';'$ess_flag';'$essScLocalId1';'$essScPairId1';'$sectorEquipmentFunctionRef1 >> $enb_database
+   !echo $rbs_name';LTE;'$enodeB_ID';'$cell_name';'$cell_id1';'$pci';'$tac1';'$bw';'$arfcn_DL';'$f1_dl';'$arfcn_UL';'$f1_ul';'$band';'$ess_flag';'$essScLocalId1';'$essScPairId1';'$sectorEquipmentFunctionRef1 >> $enb_database
   fi 
  done
 endfunc
