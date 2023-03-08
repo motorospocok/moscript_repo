@@ -1,5 +1,5 @@
 #Antenna setup script by ethtoja
-#Version 1.0
+#Version 1.1
 #This script can be used to set sector config antennas
 #Usage:
 #From moshell 
@@ -7,6 +7,7 @@
 # or
 # runx set_antenna_for_TC.mos  cell <EutranCellFDD_name> <number_of_atennas>
 # could be run from mobatch as well
+# 2023 Marc 7 - now supports 1x1 SiSo
 
 lt all
 gs
@@ -107,6 +108,14 @@ function set_sector
   #del $temp2[1],rFport=C
   #del $temp2[1],rFport=D
   $err_text = 2x2_config_setup_is_completed
+  print_error_report $err_text
+ fi
+ if $nr_of_mos > 1 &&  $ant_number = 1 &&  $already_defined = no
+  set NodeSupport=1,SectorEquipmentFunction=$1 rfBranchRef $rfbranch2A
+  deb $temp2[1],rFport=C
+  deb $temp2[1],rFport=D
+  #accn $FieldUnit1 restartUnit 1 1
+  $err_text = 1x1_config_setup_is_completed
   print_error_report $err_text
  fi
 endfunc
