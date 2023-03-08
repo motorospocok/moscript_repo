@@ -1,0 +1,66 @@
+#move sectors script by ethtoja
+#This script is written for to support test case on TC102
+#Usage runx sector_move.mos <sector_A> <sector_B>
+#RfBranches in Sector A will be repalced with Sector_B and vica versa
+
+
+gs
+confb
+
+lt all
+$sector1 = $1
+$sector2 = $2
+
+
+function build_rfbranchref1
+ $loop = $1
+ $sector = $2
+ $i = 3
+ 
+ $rfBranchRef1 = something
+ for $loop
+  if $sector = 1
+   $branch_to_add = $first_sector_data[$i]
+  else
+   $branch_to_add = $second_sector_data[$i]
+  fi
+   if $rfBranchRef1 = something
+    $rfBranchRef1 = $branch_to_add
+   else
+    $rfBranchRef1 = $rfBranchRef1 $branch_to_add
+   fi
+   $i = $i + 1
+ done
+endfunc
+
+
+bl NodeSupport=1,SectorEquipmentFunction=$sector1
+bl NodeSupport=1,SectorEquipmentFunction=$sector2
+
+get NodeSupport=1,SectorEquipmentFunction=$sector1 rfBranchRef > $temp
+$temp1 = `echo "$temp" | tr -d '[ ]'`
+$split_separator = =
+$temp2 = split($temp1)
+$sector_1_branches = $temp2[1]
+$temp3 = `echo "$temp" | sed 's/>>> rfBranchRef//g'`
+$split_separator = =\x20
+$first_sector_data = split($temp3)
+
+get NodeSupport=1,SectorEquipmentFunction=$sector2 rfBranchRef > $temp
+$temp1 = `echo "$temp" | tr -d '[ ]'`
+$split_separator = =
+$temp2 = split($temp1)
+$sector_2_branches = $temp2[1]
+$temp3 = `echo "$temp" | sed 's/>>> rfBranchRef//g'`
+$split_separator = =\x20
+$second_sector_data = split($temp3)
+
+build_rfbranchref1 $sector_1_branches 1
+set NodeSupport=1,SectorEquipmentFunction=$sector2 rfBranchRef $rfBranchRef1
+build_rfbranchref1 $sector_2_branches 2
+set NodeSupport=1,SectorEquipmentFunction=$sector1 rfBranchRef $rfBranchRef1
+
+deb NodeSupport=1,SectorEquipmentFunction=$sector1
+deb NodeSupport=1,SectorEquipmentFunction=$sector2
+confb
+gs
