@@ -6,8 +6,9 @@
 #2022 December 19 - V1.5 added VDU support
 #2023 Februery 22 - V1.5.1 corrected ESS ID state check
 #2023 March 1 - V1.6 now supports SA on VDU and new parameters ulAvailableCrbs,dlAvailableCrbs,ssWithRmLteSyncSigPbchEnabled,dftSOfdmPuschEnabled1,dftSOfdmMsg3Enabled
+#2023 March 9 - V1.61 bugfix: introduce $print_att variable to print string attribute correctly
 
-$version = 1.6v
+$version = 1.61v
 s+
 #Variable initialization
 $path1 = ~/CloneToYaml/
@@ -645,21 +646,42 @@ function obtain_nrcelldu
   !echo '++++++drxInactivityTimer: '$drxInactivityTimer1 >> v1.txt
   !echo '++++++drxLongCycle: '$drxLongCycle1 >> v1.txt
   !echo '++++++drxOnDurationTimer: '$drxOnDurationTimer1 >> v1.txt
-  
+  $print_att = no
   if $pdschInDmrsSymEnabled1 = true
    !echo '++++++attributes:' >> v1.txt
+   $print_att = yes
    !echo '++++++++- name: "pdschInDmrsSymEnabled"' >> v1.txt
    !echo '++++++++++value: "true"' >> v1.txt 
   fi
-  if $dftSOfdmPuschEnabled1 = true
+  if $dftSOfdmPuschEnabled1 = true && $print_att = yes
    !echo '++++++++- name: "dftSOfdmPuschEnabled"' >> v1.txt
    !echo '++++++++++value: "true"' >> v1.txt 
   fi
-  if $dftSOfdmMsg3Enabled1 = true
+  if $dftSOfdmPuschEnabled1 = true && $print_att = no
+   !echo '++++++attributes:' >> v1.txt
+   $print_att = yes
+   !echo '++++++++- name: "dftSOfdmPuschEnabled"' >> v1.txt
+   !echo '++++++++++value: "true"' >> v1.txt 
+  fi
+  
+  if $dftSOfdmMsg3Enabled1 = true  && $print_att = yes
    !echo '++++++++- name: "dftSOfdmMsg3Enabled"' >> v1.txt
    !echo '++++++++++value: "true"' >> v1.txt 
   fi
-  if $ssWithRmLteSyncSigPbchEnabled1 = true
+  if $dftSOfdmMsg3Enabled1 = true  && $print_att = no
+   !echo '++++++attributes:' >> v1.txt
+   $print_att = yes
+   !echo '++++++++- name: "dftSOfdmMsg3Enabled"' >> v1.txt
+   !echo '++++++++++value: "true"' >> v1.txt 
+  fi
+  
+  if $ssWithRmLteSyncSigPbchEnabled1 = true && $print_att = yes
+   !echo '++++++++- name: "ssWithRmLteSyncSigPbchEnabled"' >> v1.txt
+   !echo '++++++++++value: "true"' >> v1.txt 
+  fi
+  if $ssWithRmLteSyncSigPbchEnabled1 = true && $print_att = no
+   !echo '++++++attributes:' >> v1.txt
+   $print_att = yes
    !echo '++++++++- name: "ssWithRmLteSyncSigPbchEnabled"' >> v1.txt
    !echo '++++++++++value: "true"' >> v1.txt 
   fi
@@ -705,8 +727,10 @@ function obtain_nr_sector_carrier
   !echo '++++++bSChannelBwDL: "'$bSChannelBwDL1'"' >> v1.txt
   !echo '++++++bSChannelBwUL: "'$bSChannelBwUL1'"' >> v1.txt
   !echo '++++++sectorequipmentfunc: "'$sectorequipmentfunc1'"' >> v1.txt
+  $print_att = no
   if $ess1 ~ [0-9]
    !echo '++++++attributes:' >> v1.txt
+   $print_att = yes
    !echo '++++++++- name: essScPairId' >> v1.txt
    !echo '++++++++++scheme: ''"'"'"'urn:rdns:com:ericsson:oammodel:ericsson-nrsectorcarrier-vdu-ext'"'"'"' >> v1.txt
    !echo '++++++++++value: ' $essScPairId1 >> v1.txt  
@@ -719,18 +743,31 @@ function obtain_nr_sector_carrier
   fi
   
   get $mo dlAvailableCrbs > $dlAvailableCrbs1
-  if $dlAvailableCrbs1 ~ [1-9]
+  if $dlAvailableCrbs1 ~ [1-9] && $print_att = yes
+   !echo '++++++++- name: dlAvailableCrbs' >> v1.txt
+   !echo '++++++++++scheme: ''"'"'"'urn:rdns:com:ericsson:oammodel:ericsson-nrsectorcarrier-vdu-ext'"'"'"' >> v1.txt
+   !echo '++++++++++value: ''"'$dlAvailableCrbs1'"' >> v1.txt
+  fi
+  if $dlAvailableCrbs1 ~ [1-9] && $print_att = no
+   !echo '++++++attributes:' >> v1.txt
+   $print_att = yes
    !echo '++++++++- name: dlAvailableCrbs' >> v1.txt
    !echo '++++++++++scheme: ''"'"'"'urn:rdns:com:ericsson:oammodel:ericsson-nrsectorcarrier-vdu-ext'"'"'"' >> v1.txt
    !echo '++++++++++value: ''"'$dlAvailableCrbs1'"' >> v1.txt
   fi
   get $mo ulAvailableCrbs > $ulAvailableCrbs1
-  if $ulAvailableCrbs1 ~ [1-9]
+  if $ulAvailableCrbs1 ~ [1-9] && $print_att = yes
    !echo '++++++++- name: ulAvailableCrbs' >> v1.txt
    !echo '++++++++++scheme: ''"'"'"'urn:rdns:com:ericsson:oammodel:ericsson-nrsectorcarrier-vdu-ext'"'"'"' >> v1.txt
    !echo '++++++++++value: ''"'$ulAvailableCrbs1'"' >> v1.txt
   fi
-  
+  if $ulAvailableCrbs1 ~ [1-9] && $print_att = no
+   !echo '++++++attributes:' >> v1.txt
+   $print_att = yes
+   !echo '++++++++- name: ulAvailableCrbs' >> v1.txt
+   !echo '++++++++++scheme: ''"'"'"'urn:rdns:com:ericsson:oammodel:ericsson-nrsectorcarrier-vdu-ext'"'"'"' >> v1.txt
+   !echo '++++++++++value: ''"'$ulAvailableCrbs1'"' >> v1.txt
+  fi
  done
 endfunc
  
