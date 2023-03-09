@@ -1,4 +1,8 @@
-#This script was written for cloning existing configuration to Yaml file - V1.5
+#This script was written for cloning existing configuration to Yaml file.
+#Script written by ethtoja
+#Just run a script in a msrbs or VDU moshell and it produces the RAN part of the yaml file.
+#E.g runx CloneToYaml.mos
+#Not a perfect product check the result carefully :) 
 #V1.0 - Supported cloning function for EnodeB: eutrancell,eutranfreq and relation,gutrancell,gutranfreq,gutrancellrelation,rgw,tls,
 # Limitations:
 # - Discovery service hardcoded
@@ -6,7 +10,7 @@
 #2022 December 19 - V1.5 added VDU support
 #2023 Februery 22 - V1.5.1 corrected ESS ID state check
 #2023 March 1 - V1.6 now supports SA on VDU and new parameters ulAvailableCrbs,dlAvailableCrbs,ssWithRmLteSyncSigPbchEnabled,dftSOfdmPuschEnabled1,dftSOfdmMsg3Enabled
-#2023 March 9 - V1.61 bugfix: introduce $print_att variable to print string attribute correctly
+#2023 March 9 - V1.61 bugfix: introduces $print_att variable to print string attribute correctly
 
 $version = 1.61v
 s+
