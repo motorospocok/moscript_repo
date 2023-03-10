@@ -104,6 +104,7 @@ function extract_gnode_cells
   $ref2 = split($ref1)
   $split_separator = -
   $ref3 = split($ref2[3])
+  nr_low_mid_freq_calc $ref3[1]
   !echo 'SSB -----------------------------: '$ref3[1]' value in MHz: '$freq >> $logToFile
   !echo '---------------------------------------------' >> $logToFile
   if $create_DB = yes
