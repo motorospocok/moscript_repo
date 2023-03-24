@@ -15,6 +15,7 @@
 #               IPCA for external rel supported
 #               quitable 9 hardcoded
 #               eutrancellrelation supported
+#               support AMF definiton
 
 $version = 1.7v
 s+
@@ -976,13 +977,26 @@ function obtain_vcu_gnb
  get ManagedElement=1,GNBCUCPFunction=1 ^gNBId$ > $gNBId1
  get ManagedElement=1,GNBCUCPFunction=1 gNBIdLength > $gNBIdLength1
  get ManagedElement=1,GNBCUCPFunction=1 gNBCUName > $gNBCUName1
- get ManagedElement=1,GNBCUCPFunction=1 ^pLMNId$ > $plmn1
+ get ManagedElement=1,GNBCUCPFunction=1 ^pLMNId$ > $plmn1 
  !echo '++gNB:' >> v1.txt
  !echo '++++gNBId: "'$gNBId1'"' >> v1.txt
  !echo '++++gNBIdLength:  "'$gNBIdLength1'"'  >> v1.txt
  !echo '++++gNBCUName: "'$gNBCUName1'"' >> v1.txt
  !echo '++++mcc: "'$plmn1[mcc]'"' >> v1.txt
  !echo '++++mnc: "'$plmn1[mnc]'"' >> v1.txt
+ ma 5G_Core GNBCUCPFunction=.*,TermPointToAmf=
+ pr 5G_Core
+ if $nr_of_mos > 0
+ !echo '++++termPointToAmf:' >> v1.txt
+  for $mo in 5G_Core
+   get $mo ^id$ > $id1
+   get $mo ipv6Address1 > $ipv6Address11
+   get $mo ipv6Address2 > $ipv6Address21
+   !echo '++++++- id: '$id1 >> v1.txt
+   !echo '++++++++ipv6Address1'$ipv6Address11 >> v1.txt
+   !echo '++++++++ipv6Address2'$ipv6Address21 >> v1.txt
+  done
+ fi
 endfunc
 
 function obtain_interCA2
