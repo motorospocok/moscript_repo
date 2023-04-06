@@ -1,0 +1,94 @@
+#CN Migration script by ethtoja/1
+#Version 1.0
+#This script needs the following database file: TAC_values.csv
+#Also edit the $path variable according to your TAC_vlaues.csv location
+#Just run the script with runx in the msrbs
+
+lt all
+$date = `date "+%Y-%m-%d %H:%M:%S"`
+$date2 = `date "+%H%M%S"`
+
+$path = ~/Core_migration
+function execute_restart
+ get . primarycoreref > $restart_du
+ accn $restart_du manualrestart 1 1 1
+endfunc
+
+function restart_msrbs
+ $question = readinput( RBS restart required, do you want it now ? )
+ if $question ~ y || $question ~ Y
+  execute_restart
+ fi
+endfunc
+
+function set_tac_cell
+ $question = readinput(Do you really want to set $cell_name tac to $new_tac ? )
+ if $question ~ y || $question ~ Y
+  set $1 tac $new_tac
+ fi
+endfunc
+
+function migration_enb
+ !echo '************* Migration report on site: '$site_name' Date: '$date ' ************* ' >> $site_name_report.txt
+ !echo '' >> $site_name_report.txt
+ $question = readinput(Do you want to make CV before the operation? )
+ if $question ~ y || $question ~ Y
+  cvms preMig_$date2
+ fi
+ get ENodeBFunction=1 dnsLookupOnTai > $dns_lookup
+ if $dns_lookup ~ OFF
+  $restart_flag = 1
+ fi
+ ma  lte_cells ENodeBFunction=1,EUtranCellFDD=
+ for $mo in lte_cells
+  get $mo ^tac$ > $old_tac
+  $cell_name = ldn($mo)
+  $new_tac = `cat $path/TAC_values.csv | grep -i $old_tac | awk 'BEGIN {FS=";"}{print $2}'`
+  $new_tac = $new_tac -s \x0d
+  if $new_tac ~ [0-9]
+   !echo $cell_name': '$cell_name' old TAC: '$old_tac' --- new TAC: '$new_tac >> $site_name_report.txt
+   set_tac_cell $mo   
+  else
+   !echo 'ERROR: '$cell_name' old TAC: '$old_tac' --- no NEW TAC HAS BEEN FOUND' >> $site_name_report.txt
+   fi  
+ done
+ !echo '' >> $site_name_report.txt
+ !echo '**************************************************************************** ' >> $site_name_report.txt
+ !cat $site_name_report.txt
+ $question = readinput(Do you want to keep this report?)
+ if $question ~ N || $question ~ n
+  !rm  $site_name_report.txt
+ fi
+ $question = readinput(Do you want to make post CV ? )
+ if $question ~ y || $question ~ Y
+  cvms postMig_$date2
+ fi
+endfunc
+ 
+function block_old_mme
+ pr old_MME
+ if $nr_of_mos > 0
+  bl old_MME
+ fi
+endfunc
+ 
+confb
+gs
+get 0 userlabel > $site_name
+$restart_flag = 0
+pr ^enodebfunction=1
+if $nr_of_mos
+ ma old_MME TermPointToMme= administrativeState 1
+ ma unlocked_LteCells ENodeBFunction=1,EUtranCellFDD= administrativeState 1
+ block_old_mme
+ bl unlocked_LteCells
+ migration_enb
+ deb unlocked_LteCells
+ mr old_MME
+ mr unlocked_LteCells
+fi
+if $restart_flag = 1
+ restart_msrbs
+fi
+confb
+gs
