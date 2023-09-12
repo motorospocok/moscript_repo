@@ -1,0 +1,8 @@
+gs
+confb
+bl eutrancellfdd
+rset ENodeBFunction=1,EUtranCellFDD=1$ eUtranCellFDDId LTE_1
+rset ENodeBFunction=1,EUtranCellFDD=11$ eUtranCellFDDId ESS_11
+deb eutrancellfdd
+gs
+confb

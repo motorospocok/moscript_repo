@@ -1,0 +1,25 @@
+lt all
+gs
+confb
+$ip1 = $1
+pr TermPointToMme=CSIM
+if $nr_of_mos = 0
+ crn ENodeBFunction=1,TermPointToMme=CSIM
+ additionalCnRef 
+ administrativeState 0
+ dcnType 0
+ domainName 
+ ipAddress1 0.0.0.0
+ ipAddress2 0.0.0.0
+ ipv6Address1 $ip1
+ ipv6Address2 ::
+ mmeSupportLegacyLte true
+ mmeSupportNbIoT false
+ end
+else
+ bl TermPointToMme=CSIM
+ set ENodeBFunction=1,TermPointToMme=CSIM ipv6Address1 $ip1
+fi
+deb TermPointToMme=CSIM
+gs-
+confb
