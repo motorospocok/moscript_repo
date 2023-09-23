@@ -21,5 +21,6 @@ else
  set ENodeBFunction=1,TermPointToMme=CSIM ipv6Address1 $ip1
 fi
 deb TermPointToMme=CSIM
+end
 gs-
 confb

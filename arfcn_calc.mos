@@ -1,0 +1,7 @@
+st nrcelldu
+$cell = readinput(enter cell )
+get $cell arfcndl > $dl_1
+get $cell arfcnul > $ul_1
+
+$dl_2 = $dl_1 * 0.05
+$ul_2 = $ul_1 * 0.05
