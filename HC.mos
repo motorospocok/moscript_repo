@@ -1,4 +1,4 @@
-#HC mos script v0.1f
+#HC mos script v0.1
 
 confb
 gs
@@ -17,7 +17,8 @@ function cell_check
   $choice = readinput(found locked LTE cells, do you want to unlock them and check ? )
  fi
  if $choice ~ y || $choice ~ Y
-  unlock_cells
+  $mo_to_unlock = EUtranCellFDD
+  unlock_mo $mo_to_unlock
  else
   cell_check2
  fi
@@ -134,14 +135,8 @@ function melink_check
  
 endfunc
 
-function VDU_check1
- get 0 userlabel > $site_name
- $report_to_file = $site_name_$report_to_file
- !echo '**********************************************************************************' >> $report_to_file
- !echo 'VDU check on '$site_name' Date: '$date >> $report_to_file
- !echo '**********************************************************************************' >> $report_to_file
- !echo ' ' >> $report_to_file
- !echo '------------------------ NrSectorCarrier Check ------------------------'  >> $report_to_file
+function NrSectorCarrier_check
+ !echo '------------------------ NrSectorCarrier Check ------------------------'  >> $report_to_file 
  ma nr_carrier NrSectorCarrier AdministrativeState 0
  if $nr_of_mos > 0
   $mo_to_unlock = NrSectorCarrier
@@ -156,6 +151,9 @@ function VDU_check1
  fi
  !echo '-----------------------------------------------------------------------'  >> $report_to_file
  !echo ' ' >> $report_to_file
+endfunc
+
+function NrCellDU_check
  !echo '--------------------------- NrCellDU Check ----------------------------'  >> $report_to_file
  ma nr_cells NrCellDU AdministrativeState 0
  if $nr_of_mos > 0
@@ -172,6 +170,18 @@ function VDU_check1
  fi 
  !echo '-----------------------------------------------------------------------'  >> $report_to_file
  !echo ' ' >> $report_to_file
+endfunc
+
+function VDU_check1
+ get 0 userlabel > $site_name
+ $report_to_file = $site_name_$report_to_file
+ !echo '**********************************************************************************' >> $report_to_file
+ !echo 'VDU check on '$site_name' Date: '$date >> $report_to_file
+ !echo '**********************************************************************************' >> $report_to_file
+ !echo ' ' >> $report_to_file
+ NrSectorCarrier_check
+ NrCellDU_check
+
  !echo '---------------------- InterServiceLink check -------------------------'  >> $report_to_file
  st InterServiceLink ena
  if $nr_of_mos = 0
@@ -249,6 +259,7 @@ endfunc
   
  
 function alarm_check
+ 
  alt
  if $nr_of_alarms = 0
   !echo 'The Node is alarm free' >> $report_to_file
@@ -256,7 +267,7 @@ function alarm_check
   l+ $report_to_file
   alt
   l-
-  !echo ' ' >> $report_to_file
+  !echo ' ' >> $report_to_file 
  fi
 endfunc
  
@@ -279,13 +290,13 @@ function dnurp_check1
  ma locked_l1bp NurpFunction=1,L1bp= administrativeState 0
  pr locked_l1bp
  if $nr_of_mos > 0
-  $mo_to_unlock = locked_l1bp
+  $mo_to_unlock = l1bp
   unlock_mo $mo_to_unlock
  fi
  ma locked_nurpcell NurpFunction=1,Cell= administrativeState 0
  pr locked_nurpcell
  if $nr_of_mos > 0
-  $mo_to_unlock = locked_nurpcell
+  $mo_to_unlock = cell
   unlock_mo $mo_to_unlock
  fi
  wait 10
@@ -393,11 +404,11 @@ function vcucp_check1
  !echo '-------------------------------- VCU CP Interface towards VDU or DU -----------------------' >> $report_to_file
  st TermPointToGNBDU
  $defined_interface = $nr_of_mos
- if $no_of_mos = 1
+ if $nr_of_mos = 1
   !echo 'INFO: One interface found towards to the VDU or msrbs' >> $report_to_file
   !echo ' It is ok, when no TDD msrbs connected to this VCU CP' >> $report_to_file
  fi
- if $no_of_mos = 2
+ if $nr_of_mos = 2
   !echo 'INFO: Two interfaces found towards to the VDU and 5G NR TDD msrbs' >> $report_to_file  
  fi
  $skip_test = no
@@ -451,13 +462,38 @@ function vcucp_check1
  fi
  !echo ' ' >> $report_to_file
  !echo '--------------------------------------------------------------------------' >> $report_to_file
+ !echo ' ' >> $report_to_file
+ !echo '-------------------------- EUtranCellRelation Check ----------------------' >> $report_to_file
  ma ess1 EUtranCellRelation= essEnabled true
  pr ess1
  if $nr_of_mos = 0
   !echo 'ERROR: NO ESS relation defined in the VCU CP. Without it you can not test ESS' >> $report_to_file 
   !echo ' ' >> $report_to_file
  else
-  !echo 'OK: ESS relation is defined in the VDU node' >> $report_to_file
+  !echo 'OK: ESS relation is defined in the VCU CP node' >> $report_to_file
+ fi
+ !echo ' ' >> $report_to_file
+ !echo '--------------------------------------------------------------------------' >> $report_to_file
+ !echo ' ' >> $report_to_file
+ !echo '---------------------------- LTE cells in VCU CP -------------------------' >> $report_to_file
+ ma external_lte_cells ExternalEUtranCell=
+ $lte_defined = yes
+ pr external_lte_cells
+ $ext_lte_num = $nr_of_mos
+ if $nr_of_mos = 0
+  !echo 'ERROR:No LTE cell detected by the VCU' >> $report_to_file
+  !echo ' You can not test ESS with this setup' >> $report_to_file
+  $lte_defined = no
+ fi
+ st ExternalEUtranCell= ena
+ if $nr_of_mos = $ext_lte_num &&  $lte_defined = yes
+  !echo 'OK: The LTE cell seems fine in the VDU' >> $report_to_file
+ else
+  st ExternalEUtranCell= dis
+  !echo 'WARNING: The following LTE cells are not in correct state' >> $report_to_file
+  print_elements
+  !echo '' >> $report_to_file
+  !echo 'Possible reason: Need to check in the LTE node why it is down' >> $report_to_file
  fi
  !echo ' ' >> $report_to_file
  !echo '--------------------------------------------------------------------------' >> $report_to_file
@@ -493,12 +529,142 @@ function vcucp_check2
   print_elements
   !echo ' Possible reason: needs unlock on NrCellDu in VDU or in msrbs 5G NR' >> $report_to_file
  fi
+ $nrcell_relation_defined = yes
+ !echo ' ' >> $report_to_file
+ !echo '--------------------------------------------------------------------------' >> $report_to_file
+ !echo '------------------------------ NrCellRelation check ----------------------' >> $report_to_file
+ pr NRCellRelation=
+ if $nr_of_mos = 0
+  $nrcell_relation_defined = no
+  !echo ' ' >> $report_to_file
+  !echo 'WARNING: NO NrCellRelation defined ' >> $report_to_file
+  !echo ' You can not test NR Carrier Aggregation in this TC' >> $report_to_file
+ fi
+ ma Aggregation_cells NRCellRelation= sCellCandidate 1
+ pr Aggregation_cells
+ $configured_fog_aggregation = $nr_of_mos
+ if $nr_of_mos = 0 &&  $nrcell_relation_defined = yes
+  !echo ' ' >> $report_to_file
+  !echo ' WARNING: No correctly parametered NrCellRelation has been found for CA'  >> $report_to_file
+ fi
+ if $nrcell_relation_defined = yes & configured_fog_aggregation > 0
+  aggregation_check2
+ fi
+ !echo ' ' >> $report_to_file
+ !echo '--------------------------------------------------------------------------' >> $report_to_file
+ !echo '--------------------------- VCU CP alarm check ---------------------------' >> $report_to_file
+ !echo ' ' >> $report_to_file
+ alarm_check
+ !echo ' ' >> $report_to_file
+ !echo '--------------------------------------------------------------------------' >> $report_to_file
 endfunc
- 
- 
- 
- 
 
+function aggregation_check2
+ !echo ' ' >> $report_to_file
+ $all_ok = yes
+ for $mo in Aggregation_cells
+  $temp = ldn($mo)
+  get $mo caStatusActive > $ca_status
+  if $ca_status = false
+   !echo 'ERROR: '$temp >> $report_to_file
+   !echo ' CA is defined but not working' >> $report_to_file
+   $all_ok = no
+  else
+   !echo $temp 'OK: CA is defined and seems to be working'c
+  fi
+  if $all_ok = yes
+   !echo 'OK: It seems the CA is working fine.' >> $report_to_file
+  else
+   !echo 'WARNING: found anomalies' >> $report_to_file
+   !echo ' Make sure the cells are enabled and in service.'  >> $report_to_file
+  fi
+ done
+endfunc
+
+function vcu_up_check1
+ !echo ' ' >> $report_to_file
+ !echo '-------------------------------- VCU UP Interface towards VCU CP -----------------------' >> $report_to_file
+ st e1 ena
+ if $nr_of_mos = 1
+  !echo ' ' >> $report_to_file
+  !echo 'OK: Interface towards VCU CP is ok.
+ else
+  !echo ' ' >> $report_to_file
+  !echo 'ERROR: The VCU UP and VCU CP connection is broken' >> $report_to_file
+  !echo ' Possible reason: VCU CP not deployed or the the TLS communication is broken - ENM certficate issue, or network issue'  >> $report_to_file
+ fi
+ !echo ' ' >> $report_to_file
+ !echo '---------------- VCU CP Interface towards RANS ---------------------------' >> $report_to_file
+ st TermPointToSdServer=
+ if $nr_of_mos = 0
+  !echo 'ERROR: The VCU UP and RANS connection is broken' >> $report_to_file
+  !echo ' Possible reason: RANS not deployed or the the TLS communication is broken - ENM certficate issue, or network issue'  >> $report_to_file
+ else
+  !echo 'OK: Interface towards the RANS is working' >> $report_to_file
+ fi
+ !echo ' ' >> $report_to_file
+ !echo '--------------------------------------------------------------------------' >> $report_to_file
+ !echo '--------------------- VCU CP DL aggregation check ------------------------' >> $report_to_file
+ ma temp_1 . dcDlAggAllowed false
+ pr temp_1
+ $p_set = ok
+ if  = 3
+  !echo 'OK: The aggregation paramters are OK for Validation tests' >> $report_to_file
+ else
+  !echo 'WARNING: Aggregation parameters are not correct. User asked for correction' >> $report_to_file
+  $p_set = NOT_OK
+ fi
+ $answer = N
+ if $p_set = NOT_OK
+  $answer = readinput(DO you want to correct aggregation parameters? )
+ fi
+ if $answer ~ y || $answer ~ Y && $p_set = NOT_OK 
+  set . dcDlAggAllowed false
+  $p_set = ok
+  !echo 'OK: Parameters are corrected.' >> $report_to_file
+ fi 
+ if $p_set = NOT_OK && $answer !~ y || $answer !~ Y 
+  !echo 'WARNING: Parameters are NOT corrected.' >> $report_to_file
+ fi 
+ mr temp_1
+ !echo ' ' >> $report_to_file
+ !echo '--------------------------------------------------------------------------' >> $report_to_file
+ 
+ !echo '------------------------- VCU CP alarm check -----------------------------' >> $report_to_file
+ !echo ' ' >> $report_to_file
+ alarm_check
+ !echo ' ' >> $report_to_file
+ !echo '--------------------------------------------------------------------------' >> $report_to_file
+endfunc
+
+function sector_check
+ !echo '----------------------- SectorEquipemnt check ----------------------------' >> $report_to_file
+ !echo ' ' >> $report_to_file
+ ma locked_sectors SectorEquipmentFunction administrativestate 0
+ pr locked_sectors
+ if $nr_of_mos > 0
+  $mo_to_unlock = SectorEquipmentFunction
+  unlock_mo $mo_to_unlock
+ fi
+ st SectorEquipmentFunction dis
+ if $nr_of_mos > 0
+  !echo 'ERROR: Disabled sector's list: ' >> $report_to_file
+  !echo ' ' >> $report_to_file
+  print_elements
+ fi
+ pr SectorEquipmentFunction=
+ $nr_of_sectors = $nr_of_mos
+ st SectorEquipmentFunction ena
+ if $nr_of_sectors = $nr_of_mos
+  !echo 'OK: Sector status is ok.' >> $report_to_file
+ fi
+ !echo ' ' >> $report_to_file
+ !echo '--------------------------------------------------------------------------' >> $report_to_file
+ mr locked_sectors
+endfunc  
+
+ 
+  
 ################## Enodeb check part ######################
 
 pr  ENodeBFunction=1
@@ -512,6 +678,7 @@ if $nr_of_mos > 0
  !echo ' ' >> $report_to_file
  rilink_check
  field_check
+ sector_check
  mme_check
  cell_check
  melink_check
@@ -551,6 +718,48 @@ if $nr_of_mos > 0
   vcucp_check1
 fi
 
+################## VCU UP part ######################
+pr ServiceDefinition=
+if $nr_of_mos > 0
+ $date = `date "+%Y-%m-%d %H:%M:%S"`
+ get 0 userlabel > $site_name
+ $report_to_file = $site_name_$report_to_file
+ !echo '**********************************************************************************' >> $report_to_file
+ !echo 'VCU UP check on '$site_name' Date: '$date >> $report_to_file
+ !echo '**********************************************************************************' >> $report_to_file
+  vcu_up_check1
+fi
+
+################## msrs gnb part ######################
+$msrbs_gnb1 = no
+$msrbs_gnb2 = no
+pr FieldReplaceableUnit=1
+if $nr_of_mos > 0
+ $msrbs_gnb1 = yes
+fi
+pr NrCellDu=
+if $nr_of_mos > 0
+ $msrbs_gnb2 = yes
+fi
+if $msrbs_gnb1 = yes && $msrbs_gnb2 = yes
+ $date = `date "+%Y-%m-%d %H:%M:%S"`
+ get 0 userlabel > $site_name
+ $report_to_file = $site_name_$report_to_file
+ !echo '**********************************************************************************' >> $report_to_file
+ !echo 'GNB MRBS check on '$site_name' Date: '$date >> $report_to_file
+ !echo '**********************************************************************************' >> $report_to_file
+ !echo ' ' >> $report_to_file
+ rilink_check
+ field_check
+ sector_check
+ NrSectorCarrier_check
+ NrCellDU_check
+# msrbs_gnb_check1
+fi
+
+
+
+
 !echo '************************** REPORT END ********************************************'  >> $report_to_file
 !echo ' '  >> $report_to_file
 !cat $report_to_file
@@ -560,5 +769,3 @@ if $choice ~ y || $choice ~ Y
 else
  !rm $report_to_file
 fi
-
-
