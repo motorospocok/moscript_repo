@@ -2,17 +2,19 @@
 #This HC script written for to support the developer's job: check the nodes status
 #This scripts can be run from moshell with command e.g runx HC_staging.mos
 #Supported node types: msrbs LTE, msrb GNB, msrbs dNURP,VDU, VCU CP, VCU UP
-#you have to edit the $path_to_report variable in line 15 before usage.
+#you have to edit the $path_to_report variable in line 17 if you want different path to report file storage.
 #Version 1.0 - First release
+#Version 1.01 - 2022 oct 5 - The default report file directory is the user homedir.
+#               Don't need to edit if it is ok for the user.
 
-$version = 1.0
+$version = 1.01
 confb
 gs
 lt all
 $report_to_file = report
 $locked_cells_found = 0
 unset $choice
-$path_to_report = /home/ethtoja/test
+$path_to_report = `echo $HOME`
 
 
 ################# Function declaration part below ######################
@@ -37,7 +39,7 @@ endfunc
 function print_elements
  for $mo in st_group
   $temp = rdn($mo)
-  !echo ' '$temp >> $report_to_file
+  !echo ' '$temp >> $path_to_report/$report_to_file
  done
 endfunc
 
