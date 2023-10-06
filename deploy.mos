@@ -1,0 +1,23 @@
+#Short support script to create deploy string on the current sw level
+
+$operation = install
+if $1 ~ up || $1 ~ UP
+ $operation = upgrade
+fi
+pv $operation
+cvcu
+$temp1 = $currentUP
+$temp2 = $temp1 -s _ -r -
+$temp1 = $temp2 -s / -r _
+get 0 userlabel > $node1
+$split_separator = -
+$node2 = split($node1)
+!echo '--------------------CUT BELOW ---------------------' >> temp1.txt
+!echo $node2[1]':' >> temp1.txt
+!echo '+++version: '$temp1 >> temp1.txt
+!echo '+++operation: '$operation >> temp1.txt
+!echo '---------------------------------------------------' >> temp1.txt
+!cat temp1.txt|sed 's,+, ,g' > temp2.txt
+!cat temp2.txt
+!rm temp1.txt
+!rm temp2.txt
