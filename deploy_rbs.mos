@@ -1,0 +1,22 @@
+lt all
+$post = $1
+get 0 userLabel > $rbs_name
+$rbs_name = $rbs_name -s -Helm -g
+cvls
+pv $currentUP
+$sw_version = $currentUP -s _ -r -
+$sw_version = $sw_version -s / -r _
+!echo '----------------------------------------------------------------' >> temp.txt
+!echo ' ' >> temp.txt
+!echo $rbs_name':' >> temp.txt
+!echo '+++version: '$sw_version >> temp.txt
+!echo '+++operation: install' >> temp.txt
+if $post ~ post
+ !echo '+++deployOption: --set node.moconfig=true --set node.installTimeOut=500 --set poststep.enabled=true' >> temp.txt
+fi
+!echo ' ' >> temp.txt
+!echo '----------------------------------------------------------------' >> temp.txt
+!cat temp.txt|sed 's,+, ,g' > temp2.txt
+!cat temp2.txt
+!rm temp.txt
+!rm temp2.txt
