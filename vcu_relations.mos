@@ -1,0 +1,146 @@
+lt all
+prox
+
+function error_print
+ if $error_code = 1
+  !echo '****** FATAL ERROR *******' >> error.txt
+  !ecjo 'The source and the destination cell must be different!!!' >> error.txt
+  !echo '****** FATAL ERROR *******' >> error.txt
+  !echo ' >> $error.txt
+ fi
+ if $error_code = 2
+  !echo '****** FATAL ERROR *******' >> error.txt
+  !echo 'The relation already exist!!!' >> error.txt
+  !echo '****** FATAL ERROR *******' >> error.txt
+  !echo ' >> $error.txt
+ fi
+ if $error_code = 3
+  !echo '****** OPERATION SUCCEED *******' >> error.txt
+  !echo 'Cell relation is created' >> error.txt
+  !echo '****** OPERATION SUCCEED *******' >> error.txt
+  !!echo ' >> $error.txt
+ fi
+ !cat error.txt
+ !rm error.txt
+ $q1 = readinput(Do you want another try? )
+ if $q1 ~ y || $q1 ~ Y
+  cell_selection
+  $error_code = 0 
+ else
+  $error_code = 66
+ fi
+endfunc
+
+function cell_selection
+ mr cell_relation
+ mr nrFreqRel1
+ get nrcellcu= cellLocalId
+ $source_cell_proxy = readinput(Please give me the source cell proxy: )
+ $destination_cell_proxy = readinput(Please give me the destination cell proxy: )
+ if $destination_cell_proxy = $source_cell_proxy
+  $error_code = 1
+  error_print
+ fi
+ $split_separator = ,
+ $source_cell_ldn = ldn($source_cell_proxy)
+ $temp = split($source_cell_ldn)
+ $source_cell_ldn = $temp[2],$temp[3],$temp[4]
+ 
+ $destination_cell_ldn = ldn($destination_cell_proxy)
+ $temp = split($destination_cell_ldn)
+ $destination_cell_ldn = $temp[2],$temp[3],$temp[4]
+ 
+ ma cell_relation $source_cell_ldn,NrCellrelation= adjacentNRCellRef $destination_cell_ldn
+ pr cell_relation
+ if $nr_of_mos > 0
+  $error_code = 2
+  error_print
+ fi
+ if $error_code != 66
+  nr_freq_def1
+ fi
+endfunc
+
+function nr_freq_def1
+ get $destination_cell_proxy nRFrequencyRef > $dest_freq
+ ma nrFreqRel1 $source_cell_ldn,NrFreqRelation= nRFrequencyRef $dest_freq
+ pr nrFreqRel1
+ if $nr_of_mos = 1
+  !echo '**************** Warning ***************' >> error.txt
+  !echo 'The NrFreqrelation for this cell relation is already defined' >> error.txt
+  !echo '**************** Warning ***************' >> error.txt
+  !echo ' ' >> error.txt
+  !cat error.txt
+  !rm error.txt
+  $q1 = readinput(Don't worry, be happy, script will continue witht the NrcellCreation! Press ENTER  )
+  nr_cell_relation_def
+ fi
+ if $error_code != 66
+  $nr_freq_rel_name = readinput(Please enter the NrFreqRelation name )
+  crn $source_cell_ldn,NRFreqRelation=$nr_freq_rel_name
+  anrMeasOn false
+  cellReselectionPriority 7
+  cellReselectionSubPriority 
+  intraFreqMCFreqRelProfileRef 
+  mcpcPCellNrFreqRelProfileRef 
+  mcpcPSCellNrFreqRelProfileRef 
+  mdtMeasOn true
+  nRFrequencyRef $dest_freq
+  pMax 
+  plmnIdList 
+  plmnRestriction false
+  qOffsetFreq 0
+  qQualMin 0
+  qRxLevMin -140
+  sIntraSearchP 62
+  sIntraSearchQ 
+  tReselectionNR 2
+  tReselectionNRSfHigh 
+  tReselectionNRSfMedium 
+  threshXHighP 4
+  threshXHighQ 
+  threshXLowP 0
+  threshXLowQ 
+  trStSaNrFreqRelProfileRef 
+  ueMCNrFreqRelProfileRef 
+  end
+  nr_cell_relation_def
+ fi
+endfunc
+
+function nr_cell_relation_def
+ $cell_rel_name = readinput(Please enter cell relation name )
+ 
+ ma nrFreqRel1 $source_cell_ldn,NrFreqRelation= nRFrequencyRef $dest_freq
+ for $mo in nrFreqRel1
+  $nrFreq_rel_ldn = ldn($mo)
+ done
+ $temp = split($nrFreq_rel_ldn)
+ $nrFreq_rel_ldn = $temp[2],$temp[3],$temp[4],$temp[5]
+ $q1 = readinput(Do you want aggregation? )
+ if $q1 ~ y || $q1 ~ Y
+  $scellCand = 1
+  $cover = 1
+ else
+  $scellCand = 0
+  $cover = 0
+ fi
+ crn $source_cell_ldn,NRCellRelation=$cell_rel_name
+ adjacentNRCellRef $destination_cell_ldn
+ cellIndividualOffsetNR 0
+ coverageIndicator $cover
+ isHOAllowed true
+ isRemoveAllowed false
+ nRFreqRelationRef $nrFreq_rel_ldn
+ sCellCandidate $scellCand
+ end
+ $error_code = 3
+ error_print
+endfunc
+
+$error_code = 0
+cell_selection
+
+
+
+
