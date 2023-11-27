@@ -1,5 +1,7 @@
-lt all
-prox
+
+#Version 2.0 - with menu build
+lt alll
+
 
 function error_print
  if $error_code = 1
@@ -20,6 +22,12 @@ function error_print
   !echo '****** OPERATION SUCCEED *******' >> error.txt
   !!echo ' >> $error.txt
  fi
+ if $error_code = 4
+  !echo '****** FATAL ERROR *******' >> error.txt
+  !echo Selection must contains NUMBER ONLY' >> error.txt
+  !echo '****** FATAL ERROR *******' >> error.txt
+  !!echo ' >> $error.txt
+ fi
  !cat error.txt
  !rm error.txt
  $q1 = readinput(Do you want another try? )
@@ -34,21 +42,44 @@ endfunc
 function cell_selection
  mr cell_relation
  mr nrFreqRel1
- get nrcellcu= cellLocalId
- $source_cell_proxy = readinput(Please give me the source cell proxy: )
- $destination_cell_proxy = readinput(Please give me the destination cell proxy: )
+ $split_separator = ,
+ ma vcu_cell GNBCUCPFunction=1,NRCellCU=
+ $i = 1
+ !echo ' --------------------------------- NrCellCU list ---------------------------------' >> menu.txt
+ for $mo in vcu_cell
+  get $mo cellLocalId > $local_id
+  $cell_name1 = ldn($mo)
+  $temp = split($cell_name1)
+  $cell_name[$i] = $temp[2],$temp[3],$temp[4]
+  !echo $i ' -- '$cell_name[$i]'CellLocalId: '$local_id >> menu.txt
+  $i = $i + 1
+ done
+ $i = $i - 1
+ !echo ' --------------------------------- NrCellCU list ---------------------------------' >> menu.txt
+ !echo ' ' >> menu.txt
+ !cat menu.txt
+ !
+ $source_cell_proxy = readinput(Please give me the source cell number from the list:)
+ if $source_cell_proxy ~ [A..Z] || $source_cell_proxy ~ [a..z]
+  $error_code = 4
+  error_print
+ fi
+
+ $destination_cell_proxy = readinput(Please give me the destination cell number from the list: )
+ if $destination_cell_proxy ~ [A..Z] || $destination_cell_proxy ~ [a..z]
+  $error_code = 4
+  error_print
+ fi
+ !cat menu.txt
+ !rm menu.txt
  if $destination_cell_proxy = $source_cell_proxy
   $error_code = 1
   error_print
  fi
  $split_separator = ,
- $source_cell_ldn = ldn($source_cell_proxy)
- $temp = split($source_cell_ldn)
- $source_cell_ldn = $temp[2],$temp[3],$temp[4]
+ $source_cell_ldn = $cell_name[$source_cell_proxy]
  
- $destination_cell_ldn = ldn($destination_cell_proxy)
- $temp = split($destination_cell_ldn)
- $destination_cell_ldn = $temp[2],$temp[3],$temp[4]
+ $destination_cell_ldn = $cell_name[$destination_cell_proxy]
  
  ma cell_relation $source_cell_ldn,NrCellrelation= adjacentNRCellRef $destination_cell_ldn
  pr cell_relation
@@ -76,10 +107,12 @@ function nr_freq_def1
   nr_cell_relation_def
  fi
  if $error_code != 66
+  get $source_cell_ldn,NRFreqRelation= cellReselectionPriority
+  $prio = readinput( Enter priority )
   $nr_freq_rel_name = readinput(Please enter the NrFreqRelation name )
   crn $source_cell_ldn,NRFreqRelation=$nr_freq_rel_name
   anrMeasOn false
-  cellReselectionPriority 7
+  cellReselectionPriority $prio
   cellReselectionSubPriority 
   intraFreqMCFreqRelProfileRef 
   mcpcPCellNrFreqRelProfileRef 
