@@ -1,0 +1,8 @@
+get GNBDUFunction=1 ^gnbid$ > $gnb1
+get GNBDUFunction=1 gNBIdLength > $lt
+$lt = 36 - $lt
+$tt = `echo 2^$lt|bc`
+$gnb1 = $gnb1 * $tt
+get nrcelldu= cellLocalId 
+$a = readinput(Enter local id )
+$gnb1 = $gnb1 + $a
