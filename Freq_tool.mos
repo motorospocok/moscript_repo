@@ -1,0 +1,30 @@
+function nr_low_mid_freq_calc
+ $freq1 = $1
+ $freq = 5 * $freq1
+ $freq = $freq / 1000
+endfunc
+
+ma vdu_cell GNBDUFunction=1,NRCellDU=
+for $mo in vdu_cell
+ get $mo ^id$ > $ID
+ get $mo nRPCI > $nRPCI1
+ get $mo arfcndl > $dl
+ nr_low_mid_freq_calc $dl
+ $arfcn_DL = $freq
+ get $mo arfcnUl > $ul
+ nr_low_mid_freq_calc $ul
+ $arfcn_UL = $freq
+ get $mo ssbFrequency > $ssb
+ nr_low_mid_freq_calc $ssb
+ $ssb1 = $freq
+ !echo '*************************************' >> ~/alma.txt
+ !echo 'VDU Cell name :'$ID >> ~/alma.txt
+ !echo 'nRPCI value   :'$nRPCI1 >>  ~/alma.txt
+ !echo 'ArfcnDL: '$dl' value in MHz: '$arfcn_DL  >> ~/alma.txt
+ !echo 'ArfcnUL: '$ul' value in MHz: '$arfcn_UL  >> ~/alma.txt
+ !echo 'SSB    : '$ssb' value in MHz: '$ssb1  >> ~/alma.txt
+ !echo '*************************************' >> ~/alma.txt
+done
+
+!cat ~/alma.txt
+!rm ~/alma.txt
