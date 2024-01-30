@@ -8,8 +8,9 @@
 #               Don't need to edit if it is ok for the user.
 #Version 1.02 - VCU UP RANS interface check correction
 #Version 1.03 - checking dNurp cell subcription state
+#Version 1.04 - wrong castatusActive check corrected
 
-$version = 1.03
+$version = 1.04
 confb
 gs
 lt all
@@ -624,7 +625,7 @@ function aggregation_check2
  for $mo in Aggregation_cells
   $temp = ldn($mo)
   get $mo caStatusActive > $ca_status
-  if $ca_status = false
+  if $ca_status !~ true
    !echo 'ERROR: '$temp >> $path_to_report/$report_to_file
    !echo ' CA is defined but not working' >> $path_to_report/$report_to_file
    $all_ok = no
