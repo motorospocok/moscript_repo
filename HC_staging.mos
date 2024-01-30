@@ -6,8 +6,10 @@
 #Version 1.0 - First release
 #Version 1.01 - 2022 oct 5 - The default report file directory is the user homedir.
 #               Don't need to edit if it is ok for the user.
+#Version 1.02 - VCU UP RANS interface check correction
+#Version 1.03 - checking dNurp cell subcription state
 
-$version = 1.01
+$version = 1.03
 confb
 gs
 lt all
@@ -372,9 +374,23 @@ function check_l1bp
   check_dnurp_cell1
  else 
   !echo 'ERROR: Cell tests are skipped due to NO working L1BP' >> $path_to_report/$report_to_file
+  !echo ' ' >> $path_to_report/$report_to_file  
+ fi
+ !echo ' ' >> $path_to_report/$report_to_file
+ !echo 'dNurp Cell subcription check:' >> $path_to_report/$report_to_file
+ !echo ' ' >> $path_to_report/$report_to_file
+ mr st_group
+ ma st_group cell csimState !1 
+ if $nr_of_mos = 0
+  !echo 'OK: All Dnurp cells are subcribed on CSIM'  >> $path_to_report/$report_to_file
+ else
+  !echo 'ERROR: The following dNURP cells are NOT subrcibed - not visible in the CSIM, can not be listed!'   >> $path_to_report/$report_to_file
+  print_elements
+  mr st_group
   !echo ' ' >> $path_to_report/$report_to_file
   !echo '--------------------------------------------------------------------------' >> $path_to_report/$report_to_file 
  fi
+ 
  !echo ' ' >> $path_to_report/$report_to_file
  !echo '-------------------------------- dNurp alarm check -----------------------' >> $path_to_report/$report_to_file
  !echo 'DNURP alarms:'  >> $path_to_report/$report_to_file
@@ -387,7 +403,7 @@ function check_dnurp_cell1
  $result = no_bouncing
  $ww = 5
  !echo ' '   >> $path_to_report/$report_to_file
- !echo 'dNurp cell state check' >> $path_to_report/$report_to_file
+ !echo 'dNurp cell state check:' >> $path_to_report/$report_to_file
  !echo ' '   >> $path_to_report/$report_to_file
  for 6 
   st cell dis
@@ -403,10 +419,10 @@ function check_dnurp_cell1
  !echo ' '   >> $path_to_report/$report_to_file
  st cell dis
  if $nr_of_mos = 0 && $result = no_bouncing
-  !echo 'OK: dNURP cells are working and not bouncing'  >> $path_to_report/$report_to_file
+  !echo 'OK: dNurp cells are working and not bouncing'  >> $path_to_report/$report_to_file
  fi
  if $nr_of_mos = 0 && $result_bouncing = detected
-  !echo 'WARNING: dNURP cells are working but seems they are bouncing'  >> $path_to_report/$report_to_file
+  !echo 'WARNING: dNurp cells are working but seems they are bouncing'  >> $path_to_report/$report_to_file
   !echo 'WARNING: Suggest to lock/unlock VDU cells or redeploy VDU'  >> $path_to_report/$report_to_file
   !echo ' ' >> $path_to_report/$report_to_file
  fi
@@ -418,7 +434,6 @@ function check_dnurp_cell1
   !echo ' ' >> $path_to_report/$report_to_file
  fi
  !echo ' ' >> $path_to_report/$report_to_file
- !echo '--------------------------------------------------------------------------' >> $path_to_report/$report_to_file
 endfunc
 
 function vcucp_check1
@@ -435,7 +450,7 @@ function vcucp_check1
  !echo '--------------------------------------------------------------------------' >> $path_to_report/$report_to_file
  !echo ' ' >> $path_to_report/$report_to_file
  !echo '---------------- VCU CP Interface towards RANS ---------------------------' >> $path_to_report/$report_to_file
- st TermPointToSdServer=
+ st TermPointToSdServer= ena
   if $nr_of_mos = 0
   !echo 'ERROR: The VCU CP and RANS connection is broken' >> $path_to_report/$report_to_file
   !echo ' Possible reason: RANS not deployed or the the TLS communication is broken - ENM certficate issue, or network issue'  >> $path_to_report/$report_to_file
@@ -639,7 +654,7 @@ function vcu_up_check1
  fi
  !echo ' ' >> $path_to_report/$report_to_file
  !echo '---------------- VCU UP Interface towards RANS ---------------------------' >> $path_to_report/$report_to_file
- st TermPointToSdServer=
+ st TermPointToSdServer= ena
  if $nr_of_mos = 0
   !echo 'ERROR: The VCU UP and RANS connection is broken' >> $path_to_report/$report_to_file
   !echo ' Possible reason: RANS not deployed or the the TLS communication is broken - ENM certficate issue, or network issue'  >> $path_to_report/$report_to_file
