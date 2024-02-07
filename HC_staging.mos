@@ -9,8 +9,9 @@
 #Version 1.02 - VCU UP RANS interface check correction
 #Version 1.03 - checking dNurp cell subcription state
 #Version 1.04 - wrong castatusActive check corrected
+#Version 1.05 - improved VCU RANS interface check
 
-$version = 1.04
+$version = 1.05
 confb
 gs
 lt all
@@ -655,8 +656,16 @@ function vcu_up_check1
  fi
  !echo ' ' >> $path_to_report/$report_to_file
  !echo '---------------- VCU UP Interface towards RANS ---------------------------' >> $path_to_report/$report_to_file
+ $sd_error = no
  st TermPointToSdServer= ena
  if $nr_of_mos = 0
+  $sd_error = yes
+ fi
+ st ServiceInstance= ena
+ if $nr_of_mos = 0
+  $sd_error = yes
+ fi
+ if $sd_error = yes
   !echo 'ERROR: The VCU UP and RANS connection is broken' >> $path_to_report/$report_to_file
   !echo ' Possible reason: RANS not deployed or the the TLS communication is broken - ENM certficate issue, or network issue'  >> $path_to_report/$report_to_file
  else
