@@ -385,6 +385,32 @@ func rnc_check
  
  endfunc
  
+function abis_check_radionode
+ $abis_flag = 0
+ st abis
+ if $nr_of_mos > 0
+  $abis_flag = 1
+ else
+  !echo 'Abis check ------------ Result: OK - NO Abis defined in the RBS check skipped' >> $path_to_files$site_name_$hcflag_report.txt
+ fi 
+ st abis ena
+ if $nr_of_mos = 0 && $abis_flag = 1
+  !echo 'Abis check ---------- Result: NOT OK - ABIS interface disabled' >> $path_to_files$site_name_$hcflag_report.txt
+ else
+  !echo 'Abis check ---------- Result: OK - ABIS interface enabled' >> $path_to_files$site_name_$hcflag_report.txt
+ fi
+ st trx=
+ $no_trx = $nr_of_mos
+ st trx ena
+ if $nr_of_mos = $no_trx
+  !echo 'TRX check ----------- Result: OK - All defined TRX enabled  ' >> $path_to_files$site_name_$hcflag_report.txt
+ else
+  !echo 'TRX check ----------- Result: NOT OK - it seems not all defined TRX enabled' >> $path_to_files$site_name_$hcflag_report.txt
+ fi
+endfunc
+  
+  
+ 
 
 //////////////////////////////////////////////////////////
 /////////////// Main program part/////////////////////////
@@ -396,6 +422,7 @@ detect_nodetype
 if $flag_radionode = 1
 	sw_check_radionode
 	tech_check_radionode
+  abis_check_radionode
 	hw_check_radionode
 	upgradepack_check_radionode
 fi
