@@ -3,6 +3,7 @@
 // This script uses upgrade_package_list.txt to obtain sw level
 // Version 1.01 - added NR cell check on new MO struct
 // Version 1.02 - added HTML based alarm
+// Version 1.03 - added HW version display for RadioNode
 
 $date = `date "+%Y-%m-%d %H:%M:%S"`
 $path_to_files = /home/shared/ethtoja/prehc/
@@ -63,6 +64,11 @@ func sw_check_radionode
  !echo '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'>> $path_to_files$site_name_$hcflag_report.txt
  !echo 'Site name: ---------- '$site_name>> $path_to_files$site_name_$hcflag_report.txt
  !echo 'Check date: --------- '$date>> $path_to_files$site_name_$hcflag_report.txt
+ 
+ get . primarycoreref > $field_du
+ get $field_du productdata > $p1
+ $hw_version = $p1[productName]
+ !echo 'HW type: ------------ '$hw_version >> $path_to_files$site_name_$hcflag_report.txt
  ma current_sw upgradepackage ^state$ 7
  get current_sw upgradePackageId > $curr_sw_radio
  $curr_sw_radio =  $curr_sw_radio -s - -r _ 
@@ -387,24 +393,27 @@ func rnc_check
  
 function abis_check_radionode
  $abis_flag = 0
- st abis
+ st abisip=
+ pv $nr_of_mos
  if $nr_of_mos > 0
   $abis_flag = 1
  else
-  !echo 'Abis check ------------ Result: OK - NO Abis defined in the RBS check skipped' >> $path_to_files$site_name_$hcflag_report.txt
+  !echo 'Abis check ---------- Result: OK - NO Abis defined in the RBS check skipped' >> $path_to_files$site_name_$hcflag_report.txt
  fi 
- st abis ena
+ st abisip ena
  if $nr_of_mos = 0 && $abis_flag = 1
   !echo 'Abis check ---------- Result: NOT OK - ABIS interface disabled' >> $path_to_files$site_name_$hcflag_report.txt
- else
+ fi
+ if $nr_of_mos > 0 && $abis_flag = 1
   !echo 'Abis check ---------- Result: OK - ABIS interface enabled' >> $path_to_files$site_name_$hcflag_report.txt
  fi
  st trx=
  $no_trx = $nr_of_mos
  st trx ena
- if $nr_of_mos = $no_trx
+ if $nr_of_mos = $no_trx && $abis_flag = 1
   !echo 'TRX check ----------- Result: OK - All defined TRX enabled  ' >> $path_to_files$site_name_$hcflag_report.txt
- else
+ fi
+ if $nr_of_mos < $no_trx && $abis_flag = 1
   !echo 'TRX check ----------- Result: NOT OK - it seems not all defined TRX enabled' >> $path_to_files$site_name_$hcflag_report.txt
  fi
 endfunc
