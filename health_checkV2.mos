@@ -19,6 +19,7 @@ $flag_RNC = 0
 $flag_DUS = 0
 $hcflag = preHC
 $header = PRE HEALTH CHECK REPORT
+$version = v1.03
 
 
 $conclusion = "Result: OK - Site is ready for SW upgrade"
@@ -473,4 +474,6 @@ alarm_check
 !echo 'Final conclusion: --- '$conclusion>> $path_to_files$site_name_$hcflag_report.txt
 !echo '////////////////////////////////////////////////////////////////////////////////' >> $path_to_files$site_name_$hcflag_report.txt
 !echo '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++' >> $path_to_files$site_name_$hcflag_report.txt
+!echo 'HC tool '$version >> $path_to_files$site_name_$hcflag_report.txt
 !cat $path_to_files$site_name_$hcflag_report.txt
+ 
